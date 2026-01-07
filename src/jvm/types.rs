@@ -54,7 +54,7 @@ pub struct ThreadInfo {
     pub stack_trace: Vec<StackFrame>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ThreadState {
     Runnable,
     Blocked,
@@ -70,4 +70,12 @@ pub struct StackFrame {
     pub method_name: String,
     pub file_name: Option<String>,
     pub line_number: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClassInfo {
+    pub rank: u32,
+    pub instances: u64,
+    pub bytes: u64,
+    pub name: String,
 }

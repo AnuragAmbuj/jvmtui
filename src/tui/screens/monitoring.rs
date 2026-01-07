@@ -1,6 +1,9 @@
 use crate::app::{App, Tab};
 use crate::metrics::store::MetricsStore;
-use crate::tui::views::{memory::MemoryView, overview::OverviewView, threads::ThreadsView};
+use crate::tui::views::{
+    classes::ClassesView, gc::GcView, memory::MemoryView, overview::OverviewView,
+    threads::ThreadsView,
+};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -86,35 +89,26 @@ impl MonitoringScreen {
                 MemoryView::render(frame, area, store);
             }
             Tab::Threads => {
-                ThreadsView::render(frame, area);
+                ThreadsView::render(frame, area, store);
             }
-            _ => {
-                let content_text = match app.current_tab {
-                    Tab::GC => "GC View\n\n(Implementation in progress)",
-                    Tab::Classes => "Classes View\n\n(Implementation in progress)",
-                    _ => "",
-                };
-
-                let content = Paragraph::new(content_text)
-                    .style(Style::default().fg(Color::White))
-                    .block(
-                        Block::default()
-                            .borders(Borders::ALL)
-                            .title(app.current_tab.title()),
-                    );
-
-                frame.render_widget(content, area);
+            Tab::GC => {
+                GcView::render(frame, area, store);
+            }
+            Tab::Classes => {
+                ClassesView::render(frame, area, store);
             }
         }
     }
 
     fn render_footer(frame: &mut Frame, area: Rect, app: &App) {
         let footer_text = match app.current_tab {
-            Tab::Overview => "1-5: Switch Tab | h/l: Prev/Next | q: Quit | ?: Help",
-            Tab::Memory => "1-5: Switch Tab | h/l: Prev/Next | q: Quit | r: Refresh",
-            Tab::Threads => "1-5: Switch Tab | ↑/↓: Navigate | Enter: Expand | q: Quit",
-            Tab::GC => "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | q: Quit",
-            Tab::Classes => "1-5: Switch Tab | h/l: Prev/Next | c: Class Histogram | q: Quit",
+            Tab::Overview => {
+                "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | r: Reset | q: Quit"
+            }
+            Tab::Memory => "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | r: Reset | q: Quit",
+            Tab::Threads => "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | r: Reset | q: Quit",
+            Tab::GC => "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | r: Reset | q: Quit",
+            Tab::Classes => "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | r: Reset | q: Quit",
         };
 
         let footer = Paragraph::new(footer_text)

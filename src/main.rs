@@ -106,6 +106,14 @@ async fn main() -> Result<()> {
                     (KeyCode::Char('5'), _) => app.select_tab(4),
                     (KeyCode::Char('l'), _) | (KeyCode::Tab, _) => app.next_tab(),
                     (KeyCode::Char('h'), _) | (KeyCode::BackTab, _) => app.previous_tab(),
+                    (KeyCode::Char('g'), _) => {
+                        let conn = connector_arc.read().await;
+                        let _ = conn.trigger_gc().await;
+                    }
+                    (KeyCode::Char('r'), _) => {
+                        let mut store_mut = store.write().await;
+                        *store_mut = MetricsStore::new(100);
+                    }
                     _ => {}
                 }
             }

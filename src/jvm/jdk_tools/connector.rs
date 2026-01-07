@@ -3,7 +3,7 @@ use crate::jvm::connector::JvmConnector;
 use crate::jvm::jdk_tools::detector::{JdkToolsStatus, ToolStatus};
 use crate::jvm::jdk_tools::executor::execute_command;
 use crate::jvm::jdk_tools::parsers::{jcmd, jstat};
-use crate::jvm::types::{GcStats, HeapInfo, JvmInfo, ThreadInfo};
+use crate::jvm::types::{ClassInfo, GcStats, HeapInfo, JvmInfo, ThreadInfo};
 use async_trait::async_trait;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -159,7 +159,13 @@ impl JvmConnector for JdkToolsConnector {
     }
 
     async fn get_thread_info(&self) -> Result<Vec<ThreadInfo>> {
-        Ok(vec![])
+        let output = self.execute_jcmd("Thread.print").await?;
+        jcmd::parse_thread_dump(&output).map_err(|e| crate::error::AppError::Parse(e))
+    }
+
+    async fn get_class_histogram(&self) -> Result<Vec<ClassInfo>> {
+        let output = self.execute_jcmd("GC.class_histogram").await?;
+        jcmd::parse_class_histogram(&output).map_err(|e| crate::error::AppError::Parse(e))
     }
 
     async fn trigger_gc(&self) -> Result<()> {

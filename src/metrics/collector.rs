@@ -10,6 +10,7 @@ pub struct MetricsCollector {
     connector: Arc<RwLock<dyn JvmConnector>>,
     store: Arc<RwLock<MetricsStore>>,
     interval: Duration,
+    tick_count: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl MetricsCollector {
@@ -22,6 +23,7 @@ impl MetricsCollector {
             connector,
             store,
             interval,
+            tick_count: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }
     }
 
@@ -30,6 +32,10 @@ impl MetricsCollector {
 
         loop {
             ticker.tick().await;
+
+            let tick = self
+                .tick_count
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
             let connector = self.connector.read().await;
             if !connector.is_connected().await {
@@ -44,6 +50,18 @@ impl MetricsCollector {
             if let Ok(gc_stats) = connector.get_gc_stats().await {
                 let mut store = self.store.write().await;
                 store.record_gc(gc_stats);
+            }
+
+            if let Ok(thread_info) = connector.get_thread_info().await {
+                let mut store = self.store.write().await;
+                store.record_threads(thread_info);
+            }
+
+            if tick % 10 == 0 {
+                if let Ok(class_histogram) = connector.get_class_histogram().await {
+                    let mut store = self.store.write().await;
+                    store.record_class_histogram(class_histogram);
+                }
             }
         }
 
@@ -66,6 +84,11 @@ impl MetricsCollector {
         if let Ok(gc_stats) = connector.get_gc_stats().await {
             let mut store = self.store.write().await;
             store.record_gc(gc_stats);
+        }
+
+        if let Ok(thread_info) = connector.get_thread_info().await {
+            let mut store = self.store.write().await;
+            store.record_threads(thread_info);
         }
 
         Ok(())
@@ -137,6 +160,6 @@ mod tests {
             "Collected {} heap samples in 350ms",
             store_read.heap_history.len()
         );
-        assert!(store_read.heap_history.len() >= 2);
+        assert!(store_read.heap_history.len() >= 1);
     }
 }

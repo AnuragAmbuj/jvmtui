@@ -1,4 +1,6 @@
-use crate::jvm::types::{HeapInfo, MemoryPool, PoolType};
+use crate::jvm::types::{
+    ClassInfo, HeapInfo, MemoryPool, PoolType, StackFrame, ThreadInfo, ThreadState,
+};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -14,6 +16,21 @@ static CLASS_SPACE: Lazy<Regex> = Lazy::new(|| {
 });
 
 static UPTIME: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+\.\d+)\s+s").unwrap());
+
+static THREAD_HEADER: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#""([^"]+)"\s+#(\d+).*tid=0x[0-9a-f]+\s+nid=\d+\s+(.*)\s+\["#).unwrap()
+});
+
+static THREAD_STATE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"java\.lang\.Thread\.State:\s+(\w+)").unwrap());
+
+static STACK_FRAME: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^\s+at\s+([a-zA-Z0-9_.$<>]+)\.([a-zA-Z0-9_<>]+)\((?:([^:)]+):(\d+)|([^)]+))\)")
+        .unwrap()
+});
+
+static CLASS_HISTOGRAM_LINE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^\s*(\d+):\s+(\d+)\s+(\d+)\s+(.+?)\s*(?:\(.*\))?$").unwrap());
 
 pub fn parse_heap_info(output: &str) -> Result<HeapInfo, String> {
     let mut used_bytes = 0u64;
@@ -114,6 +131,126 @@ pub fn parse_vm_flags(output: &str) -> Result<Vec<String>, String> {
     Ok(flags)
 }
 
+pub fn parse_thread_dump(output: &str) -> Result<Vec<ThreadInfo>, String> {
+    let mut threads = Vec::new();
+    let lines: Vec<&str> = output.lines().collect();
+    let mut i = 0;
+
+    while i < lines.len() {
+        let line = lines[i];
+
+        // Look for thread header line
+        if let Some(caps) = THREAD_HEADER.captures(line) {
+            let name = caps[1].to_string();
+            let id = caps[2]
+                .parse::<u64>()
+                .map_err(|e| format!("Failed to parse thread id: {}", e))?;
+
+            // Parse thread state from next few lines
+            let mut state = ThreadState::Runnable;
+            let mut stack_trace = Vec::new();
+
+            // Look ahead for thread state and stack frames
+            let mut j = i + 1;
+            while j < lines.len() && j < i + 100 {
+                // Limit lookahead
+                let next_line = lines[j];
+
+                // Check if we hit the next thread
+                if THREAD_HEADER.is_match(next_line) {
+                    break;
+                }
+
+                // Parse thread state
+                if let Some(state_caps) = THREAD_STATE.captures(next_line) {
+                    state = match state_caps[1].as_ref() {
+                        "RUNNABLE" => ThreadState::Runnable,
+                        "BLOCKED" => ThreadState::Blocked,
+                        "WAITING" => ThreadState::Waiting,
+                        "TIMED_WAITING" => ThreadState::TimedWaiting,
+                        "TERMINATED" => ThreadState::Terminated,
+                        "NEW" => ThreadState::New,
+                        _ => ThreadState::Runnable,
+                    };
+                }
+
+                // Parse stack frame
+                if let Some(frame_caps) = STACK_FRAME.captures(next_line) {
+                    let class_name = frame_caps[1].to_string();
+                    let method_name = frame_caps[2].to_string();
+
+                    let (file_name, line_number) = if frame_caps.get(3).is_some() {
+                        (
+                            Some(frame_caps[3].to_string()),
+                            frame_caps[4].parse::<u32>().ok(),
+                        )
+                    } else {
+                        (frame_caps.get(5).map(|m| m.as_str().to_string()), None)
+                    };
+
+                    stack_trace.push(StackFrame {
+                        class_name,
+                        method_name,
+                        file_name,
+                        line_number,
+                    });
+                }
+
+                j += 1;
+            }
+
+            threads.push(ThreadInfo {
+                id,
+                name,
+                state,
+                stack_trace,
+            });
+
+            i = j;
+        } else {
+            i += 1;
+        }
+    }
+
+    if threads.is_empty() {
+        return Err("No threads found in dump".to_string());
+    }
+
+    Ok(threads)
+}
+
+pub fn parse_class_histogram(output: &str) -> Result<Vec<ClassInfo>, String> {
+    let mut classes = Vec::new();
+
+    for line in output.lines() {
+        if let Some(caps) = CLASS_HISTOGRAM_LINE.captures(line) {
+            let rank = caps[1]
+                .parse::<u32>()
+                .map_err(|e| format!("Failed to parse rank: {}", e))?;
+            let instances = caps[2]
+                .parse::<u64>()
+                .map_err(|e| format!("Failed to parse instances: {}", e))?;
+            let bytes = caps[3]
+                .parse::<u64>()
+                .map_err(|e| format!("Failed to parse bytes: {}", e))?;
+            let name = caps[4].trim().to_string();
+
+            classes.push(ClassInfo {
+                rank,
+                instances,
+                bytes,
+                name,
+            });
+        }
+    }
+
+    if classes.is_empty() {
+        return Err("No classes found in histogram".to_string());
+    }
+
+    Ok(classes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,5 +291,47 @@ mod tests {
         assert!(flags.len() > 10);
         assert!(flags.contains(&"-XX:+UseG1GC".to_string()));
         assert!(flags.contains(&"-XX:+HeapDumpOnOutOfMemoryError".to_string()));
+    }
+
+    #[test]
+    fn test_parse_thread_dump() {
+        let output = include_str!("../../../../assets/sample_outputs/jcmd_thread_print.txt");
+        let threads = parse_thread_dump(output).unwrap();
+
+        assert!(!threads.is_empty());
+        assert!(threads.len() > 10);
+
+        let main_thread = threads.iter().find(|t| t.name == "main");
+        assert!(main_thread.is_some());
+
+        let main = main_thread.unwrap();
+        assert!(matches!(
+            main.state,
+            ThreadState::TimedWaiting | ThreadState::Waiting
+        ));
+        assert!(!main.stack_trace.is_empty());
+
+        let first_frame = &main.stack_trace[0];
+        assert!(
+            first_frame.class_name.contains("Unsafe") || first_frame.class_name.contains("misc")
+        );
+    }
+
+    #[test]
+    fn test_parse_class_histogram() {
+        let output = include_str!("../../../../assets/sample_outputs/jcmd_class_histogram.txt");
+        let classes = parse_class_histogram(output).unwrap();
+
+        assert!(!classes.is_empty());
+        assert!(classes.len() > 100);
+
+        let first_class = &classes[0];
+        assert_eq!(first_class.rank, 1);
+        assert!(first_class.instances > 0);
+        assert!(first_class.bytes > 0);
+        assert!(!first_class.name.is_empty());
+
+        let byte_array = classes.iter().find(|c| c.name.contains("[B"));
+        assert!(byte_array.is_some());
     }
 }

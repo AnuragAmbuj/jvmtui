@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::jvm::types::{GcStats, HeapInfo, JvmInfo, ThreadInfo};
+use crate::jvm::types::{ClassInfo, GcStats, HeapInfo, JvmInfo, ThreadInfo};
 use async_trait::async_trait;
 
 #[async_trait]
@@ -17,6 +17,8 @@ pub trait JvmConnector: Send + Sync {
     async fn get_gc_stats(&self) -> Result<GcStats>;
 
     async fn get_thread_info(&self) -> Result<Vec<ThreadInfo>>;
+
+    async fn get_class_histogram(&self) -> Result<Vec<ClassInfo>>;
 
     async fn trigger_gc(&self) -> Result<()>;
 }
