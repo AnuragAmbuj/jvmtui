@@ -7,8 +7,6 @@
 
 **JVM-TUI** brings powerful JVM monitoring to your terminal with a keyboard-driven interface. Monitor heap usage, garbage collection, memory pools, and threads in real-time - perfect for SSH sessions and production environments where GUI tools aren't available.
 
----
-
 ## Features
 
 - **Auto-Discovery** - Automatically finds all running JVMs on your system
@@ -114,8 +112,6 @@ cargo build --release
 ./target/release/jvm-tui --help
 ```
 
----
-
 ## Keyboard Controls
 
 ### JVM Picker Screen
@@ -134,8 +130,6 @@ cargo build --release
 | `h` / `←` | Previous tab |
 | `l` / `→` | Next tab |
 | `q` | Disconnect and quit |
-
----
 
 ## Requirements
 
@@ -179,8 +173,6 @@ sudo dnf install java-21-openjdk-devel
 **Windows:**
 Download from [Adoptium](https://adoptium.net/) and add `bin` directory to PATH.
 
----
-
 ## What You Can Monitor
 
 ### Overview Dashboard
@@ -211,8 +203,6 @@ Download from [Adoptium](https://adoptium.net/) and add `bin` directory to PATH.
 - Top memory consumers
 - Class loading statistics
 
----
-
 ## How It Works
 
 JVM-TUI uses **agentless monitoring** - it communicates with JVMs using standard JDK tools:
@@ -229,8 +219,6 @@ JVM-TUI uses **agentless monitoring** - it communicates with JVMs using standard
 - Works with any JVM process
 - Minimal performance impact
 - Safe for production use
-
----
 
 ## Development
 
@@ -287,8 +275,6 @@ Contributions are welcome! This project is in active development.
 
 See [docs/14-implementation-phases.md](docs/14-implementation-phases.md) for detailed roadmap.
 
----
-
 ## License
 
 This project is dual-licensed under:
@@ -298,8 +284,6 @@ This project is dual-licensed under:
 
 You may choose either license for your use.
 
----
-
 ## 🙏 Acknowledgments
 
 Built with:
@@ -308,8 +292,6 @@ Built with:
 - [Clap](https://github.com/clap-rs/clap) - CLI parsing
 
 Inspired by [VisualVM](https://visualvm.github.io/) and modern CLI tools like [htop](https://htop.dev/).
-
----
 
 ## Contact
 
