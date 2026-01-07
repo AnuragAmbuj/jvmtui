@@ -1,120 +1,324 @@
-# JVM-TUI Documentation
+# JVM-TUI
 
-Welcome to the JVM-TUI documentation. This is a comprehensive guide to building a beautiful, agentless Terminal User Interface for JVM monitoring.
+> A beautiful, lightweight terminal user interface for monitoring Java Virtual Machines - no agents required.
 
-## Overview
+[![CI](https://github.com/AnuragAmbuj/jvmtui/actions/workflows/ci.yml/badge.svg)](https://github.com/AnuragAmbuj/jvmtui/actions)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-**JVM-TUI** is a modern, keyboard-driven Terminal User Interface for Java developers, offering feature-parity with VisualVM while being lightweight, SSH-friendly, and fully operable from the command line.
+**JVM-TUI** brings powerful JVM monitoring to your terminal with a keyboard-driven interface. Monitor heap usage, garbage collection, memory pools, and threads in real-time - perfect for SSH sessions and production environments where GUI tools aren't available.
 
-> *"JVM-TUI - Because production JVMs don't have GUIs."*
+---
 
-## Documentation Index
+## ✨ Features
 
-| # | Document | Description |
-|---|----------|-------------|
-| 1 | [Product Requirements](./01-product-requirements.md) | Complete PRD with feature matrix |
-| 2 | [Architecture](./02-architecture.md) | System design and technical decisions |
-| 3 | [Agentless Approach](./03-agentless-approach.md) | How we monitor JVMs without agents |
-| 4 | [Project Structure](./04-project-structure.md) | Directory layout and module organization |
-| 5 | [Dependencies](./05-dependencies.md) | Cargo dependencies and rationale |
-| 6 | [JDK Tools Integration](./06-jdk-tools-integration.md) | Working with jcmd, jstat, jps |
-| 7 | [Parsers](./07-parsers.md) | Parsing JDK tool output |
-| 8 | [Connector Trait](./08-connector-trait.md) | Abstraction for JVM connections |
-| 9 | [Metrics Collection](./09-metrics-collection.md) | Async polling and data storage |
-| 10 | [TUI Design](./10-tui-design.md) | Ratatui layouts and views |
-| 11 | [Keyboard Navigation](./11-keyboard-navigation.md) | Vim-style keybindings |
-| 12 | [Thread View Design](./12-thread-view-design.md) | Thread summary with expandable stacks |
-| 13 | [Configuration](./13-configuration.md) | CLI arguments and config files |
-| 14 | [Implementation Phases](./14-implementation-phases.md) | Development roadmap |
-| 15 | [Testing Strategy](./15-testing-strategy.md) | Test plan and fixtures |
+- 🔍 **Auto-Discovery** - Automatically finds all running JVMs on your system
+- 📊 **Real-Time Monitoring** - Live heap usage, GC statistics, and memory pool metrics
+- ⌨️ **Keyboard-Driven** - Full Vim-style navigation (no mouse needed)
+- 🚫 **No Agents Required** - Uses standard JDK tools (jcmd, jstat, jps)
+- 🖥️ **SSH-Friendly** - Works perfectly over remote connections
+- 🎨 **Beautiful TUI** - Clean, responsive interface built with Ratatui
+- ⚡ **Lightweight** - Only 1.3MB binary with minimal resource usage
 
-## Quick Start
+---
+
+## 📸 Screenshots
+
+### JVM Selection
+Auto-discovers and lists all running JVMs:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ JVM-TUI - Select JVM Process                                        │
+├─────────────────────────────────────────────────────────────────────┤
+│ Discovered JVMs                                                     │
+│                                                                     │
+│ >> PID: 46168 - com.intellij.idea.Main                             │
+│    PID: 48127 - sonarlint-ls.jar                                   │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│ Controls: ↑/k: Up | ↓/j: Down | Enter: Connect | r: Refresh | q: Quit │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Overview Dashboard
+Real-time heap usage, GC stats, and memory pools:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ JVM Info                                                            │
+│ PID: 46168 │ JDK 21.0.8 │ Uptime: 108h 27m                         │
+├─────────────────────────────────────────────────────────────────────┤
+│ [1:Overview] 2:Memory 3:Threads 4:GC 5:Classes                     │
+├─────────────────────────────────────────────────────────────────────┤
+│ ┌─ Heap Usage: 714 / 817 MB (87.4%) ─────────────────────────────┐ │
+│ │ ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█           │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ┌─ GC Statistics ─────────────────────────────────────────────────┐ │
+│ │ Young GC: 125,500 collections (498.25s total)                   │ │
+│ │ Full GC: 37 collections (9.22s total)                           │ │
+│ │ Avg Young GC: 3.97ms | Avg Full GC: 249.19ms                   │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Memory View
+Detailed memory pool breakdown with visual gauges:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ ┌─ Heap Usage Timeline (max: 817 MB) ────────────────────────────┐ │
+│ │ ▁▁▂▂▃▃▄▄▅▅▆▆▇▇██▇▇▆▆▅▅▄▄▃▃▂▂▁▁▂▂▃▃▄▄▅▅▆▆▇▇██▇▇▆▆▅▅▄▄▃▃▂▂     │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ┌─ Metaspace ─────────────────────────────────────────────────────┐ │
+│ │ Metaspace: 505 / 1507 MB (33.5%)                                │ │
+│ │ ████████████░░░░░░░░░░░░░░░░░░░░                                │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Rust** 1.75 or later ([Install Rust](https://rustup.rs/))
+- **JDK** 11+ with command-line tools (jcmd, jstat, jps)
+
+### Installation
 
 ```bash
-# Clone and build
-git clone https://github.com/you/jvm-tui
-cd jvm-tui
+# Clone the repository
+git clone https://github.com/AnuragAmbuj/jvmtui.git
+cd jvmtui
+
+# Build the release binary
 cargo build --release
 
-# Run (auto-discovers local JVMs)
+# The binary will be at target/release/jvm-tui
+```
+
+### Usage
+
+```bash
+# Auto-discover and select a JVM
 ./target/release/jvm-tui
 
-# Attach to specific PID
+# Connect to a specific JVM by PID
 ./target/release/jvm-tui --pid 12345
 
-# Custom polling interval
+# Custom polling interval (default: 1s)
 ./target/release/jvm-tui --interval 500ms
+
+# Show help
+./target/release/jvm-tui --help
 ```
 
-## Project Goals
+---
 
-| Goal | Description |
-|------|-------------|
-| **VisualVM Parity** | 100% feature coverage with VisualVM |
-| **Agentless-First** | No JVM agent required for local monitoring |
-| **Sub-second Latency** | <200ms refresh rate |
-| **Keyboard-Driven** | Full vim-style navigation |
-| **SSH-Friendly** | Works perfectly over SSH sessions |
-| **Extensible** | Plugin system for custom dashboards |
+## ⌨️ Keyboard Controls
 
-## Architecture Overview
+### JVM Picker Screen
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Move down |
+| `k` / `↑` | Move up |
+| `Enter` | Connect to selected JVM |
+| `r` | Refresh JVM list |
+| `q` | Quit application |
 
+### Monitoring Screen
+| Key | Action |
+|-----|--------|
+| `1-5` | Switch to tab (Overview, Memory, Threads, GC, Classes) |
+| `h` / `←` | Previous tab |
+| `l` / `→` | Next tab |
+| `q` | Disconnect and quit |
+
+---
+
+## 📋 Requirements
+
+### JDK Tools
+
+JVM-TUI requires the following JDK command-line tools:
+
+- **jcmd** - JVM diagnostic commands
+- **jstat** - JVM statistics
+- **jps** - JVM process listing (fallback)
+
+These tools are included with standard JDK installations (not JRE).
+
+#### Verification
+
+Check if tools are available:
+
+```bash
+jcmd -h
+jstat -h
+jps -h
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           JVM-TUI (Rust)                                │
-├─────────────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌─────────────────┐  ┌───────────────────────────┐   │
-│  │   Ratatui    │  │  Async Runtime  │  │    JVM Connector Layer    │   │
-│  │   TUI Layer  │  │     (Tokio)     │  │                           │   │
-│  └──────────────┘  └─────────────────┘  │  ┌─────────────────────┐  │   │
-│                                          │  │  JdkToolsConnector │  │   │
-│                                          │  │  (jcmd/jstat/jps)  │  │   │
-│                                          │  │  [DEFAULT]         │  │   │
-│                                          │  └─────────────────────┘  │   │
-│                                          │  ┌─────────────────────┐  │   │
-│                                          │  │  JolokiaConnector   │  │   │
-│                                          │  │  (HTTP/JSON)        │  │   │
-│                                          │  │  [OPTIONAL]         │  │   │
-│                                          │  └─────────────────────┘  │   │
-│                                          └───────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────┘
-                              │
-           ┌──────────────────┼──────────────────┐
-           │                  │                  │
-           ▼                  ▼                  ▼
-    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-    │ Local JVM 1 │    │ Local JVM 2 │    │ Remote JVM  │
-    │ (pid:12345) │    │ (pid:67890) │    │ (Jolokia)   │
-    └─────────────┘    └─────────────┘    └─────────────┘
+
+#### Installation Guide
+
+**macOS (Homebrew):**
+```bash
+brew install openjdk@21
 ```
 
-## Key Design Decisions
+**Ubuntu/Debian:**
+```bash
+sudo apt install openjdk-21-jdk
+```
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| JVM Communication | Agentless (jcmd/jstat) | No deployment friction in production |
-| TUI Framework | Ratatui | Best-in-class Rust TUI library |
-| Async Runtime | Tokio | Industry standard, subprocess support |
-| Polling Interval | Configurable (250ms-10s) | Flexibility for different use cases |
-| Thread Dumps | Summary first, expand on demand | Performance + usability balance |
+**RHEL/CentOS/Fedora:**
+```bash
+sudo dnf install java-21-openjdk-devel
+```
 
-## Current Status
+**Windows:**
+Download from [Adoptium](https://adoptium.net/) and add `bin` directory to PATH.
 
-- [x] Planning & Architecture
-- [x] Documentation
-- [ ] Phase 1: MVP (Foundation)
-- [ ] Phase 2: Full Monitoring
-- [ ] Phase 3: Advanced Features (Jolokia, SSH, Plugins)
+---
 
-## Target Users
+## 🎯 What You Can Monitor
 
-| User Type | Use Case |
-|-----------|----------|
-| **Senior Java Engineers** | Day-to-day JVM debugging and monitoring |
-| **Platform Engineers** | Production JVM health checks |
-| **SREs** | Incident response and troubleshooting |
-| **Performance Engineers** | GC tuning and profiling |
+### Overview Dashboard
+- Real-time heap usage sparkline
+- GC collection counts and times
+- Average GC pause times
+- Memory pool summary
+- JVM uptime and version
 
-## License
+### Memory View
+- Heap usage timeline
+- Memory pool breakdowns (Metaspace, Class Space, etc.)
+- Color-coded capacity warnings
+- Used/Max/Committed metrics
 
-MIT OR Apache-2.0
+### Threads View
+- Thread count by state
+- Thread list (coming in Phase 2)
+- Stack traces (coming in Phase 2)
+
+### GC View *(Planned)*
+- GC event timeline
+- Pause time distribution
+- Throughput calculation
+
+### Classes View *(Planned)*
+- Class histogram
+- Top memory consumers
+- Class loading statistics
+
+---
+
+## 🏗️ How It Works
+
+JVM-TUI uses **agentless monitoring** - it communicates with JVMs using standard JDK tools:
+
+1. **Discovery**: Uses `jcmd -l` (or `jps -l` as fallback) to find running JVMs
+2. **Connection**: Executes JDK commands (jcmd, jstat) to query JVM state
+3. **Parsing**: Parses command output into structured data
+4. **Collection**: Polls metrics at configurable intervals (default: 1s)
+5. **Display**: Renders live data in a beautiful terminal UI
+
+**Benefits:**
+- ✅ No JVM agent installation required
+- ✅ No JVM restarts needed
+- ✅ Works with any JVM process
+- ✅ Minimal performance impact
+- ✅ Safe for production use
+
+---
+
+## 🛠️ Development
+
+### Build from Source
+
+```bash
+# Debug build (faster compilation)
+cargo build
+
+# Release build (optimized)
+cargo build --release
+```
+
+### Run Tests
+
+```bash
+# Run all tests
+cargo test
+
+# Run with output
+cargo test -- --nocapture
+```
+
+### Code Quality
+
+```bash
+# Format code
+cargo fmt
+
+# Run linter
+cargo clippy
+
+# Check for issues
+cargo check
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! This project is in active development.
+
+**Phase 1 (MVP)** ✅ Complete
+- JVM discovery and connection
+- Real-time metrics collection
+- Overview and Memory views
+- Basic TUI scaffold
+
+**Phase 2** (Planned)
+- Enhanced GC view with timeline
+- Full thread dumps with stack traces
+- Class histogram view
+- Trigger GC action
+
+See [docs/14-implementation-phases.md](docs/14-implementation-phases.md) for detailed roadmap.
+
+---
+
+## 📄 License
+
+This project is dual-licensed under:
+
+- MIT License ([LICENSE-MIT](LICENSE-MIT))
+- Apache License 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+
+You may choose either license for your use.
+
+---
+
+## 🙏 Acknowledgments
+
+Built with:
+- [Ratatui](https://github.com/ratatui-org/ratatui) - Terminal UI framework
+- [Tokio](https://tokio.rs/) - Async runtime
+- [Clap](https://github.com/clap-rs/clap) - CLI parsing
+
+Inspired by [VisualVM](https://visualvm.github.io/) and modern CLI tools like [htop](https://htop.dev/).
+
+---
+
+## 📧 Contact
+
+**Anurag Ambuj**
+- GitHub: [@AnuragAmbuj](https://github.com/AnuragAmbuj)
+- Repository: [github.com/AnuragAmbuj/jvmtui](https://github.com/AnuragAmbuj/jvmtui)
+
+---
+
+<p align="center">
+  <i>JVM-TUI - Because production JVMs don't have GUIs.</i>
+</p>
