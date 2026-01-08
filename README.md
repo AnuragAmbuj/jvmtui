@@ -7,21 +7,19 @@
 
 **JVM-TUI** brings powerful JVM monitoring to your terminal with a keyboard-driven interface. Monitor heap usage, garbage collection, memory pools, and threads in real-time - perfect for SSH sessions and production environments where GUI tools aren't available.
 
----
+## Features
 
-## ✨ Features
-
-- 🔍 **Auto-Discovery** - Automatically finds all running JVMs on your system
-- 📊 **Real-Time Monitoring** - Live heap usage, GC statistics, and memory pool metrics
-- ⌨️ **Keyboard-Driven** - Full Vim-style navigation (no mouse needed)
-- 🚫 **No Agents Required** - Uses standard JDK tools (jcmd, jstat, jps)
-- 🖥️ **SSH-Friendly** - Works perfectly over remote connections
-- 🎨 **Beautiful TUI** - Clean, responsive interface built with Ratatui
-- ⚡ **Lightweight** - Only 1.3MB binary with minimal resource usage
+- **Auto-Discovery** - Automatically finds all running JVMs on your system
+- **Real-Time Monitoring** - Live heap usage, GC statistics, and memory pool metrics
+- **Keyboard-Driven** - Full Vim-style navigation (no mouse needed)
+- **No Agents Required** - Uses standard JDK tools (jcmd, jstat, jps)
+- **SSH-Friendly** - Works perfectly over remote connections
+- **Beautiful TUI** - Clean, responsive interface built with Ratatui
+- **Lightweight** - Only 1.3MB binary with minimal resource usage
 
 ---
 
-## 📸 Screenshots
+## Terminal Prototypes
 
 ### JVM Selection
 Auto-discovers and lists all running JVMs:
@@ -78,7 +76,7 @@ Detailed memory pool breakdown with visual gauges:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -114,9 +112,7 @@ cargo build --release
 ./target/release/jvm-tui --help
 ```
 
----
-
-## ⌨️ Keyboard Controls
+## Keyboard Controls
 
 ### JVM Picker Screen
 | Key | Action |
@@ -135,9 +131,7 @@ cargo build --release
 | `l` / `→` | Next tab |
 | `q` | Disconnect and quit |
 
----
-
-## 📋 Requirements
+## Requirements
 
 ### JDK Tools
 
@@ -179,9 +173,7 @@ sudo dnf install java-21-openjdk-devel
 **Windows:**
 Download from [Adoptium](https://adoptium.net/) and add `bin` directory to PATH.
 
----
-
-## 🎯 What You Can Monitor
+## What You Can Monitor
 
 ### Overview Dashboard
 - Real-time heap usage sparkline
@@ -211,9 +203,7 @@ Download from [Adoptium](https://adoptium.net/) and add `bin` directory to PATH.
 - Top memory consumers
 - Class loading statistics
 
----
-
-## 🏗️ How It Works
+## How It Works
 
 JVM-TUI uses **agentless monitoring** - it communicates with JVMs using standard JDK tools:
 
@@ -224,15 +214,13 @@ JVM-TUI uses **agentless monitoring** - it communicates with JVMs using standard
 5. **Display**: Renders live data in a beautiful terminal UI
 
 **Benefits:**
-- ✅ No JVM agent installation required
-- ✅ No JVM restarts needed
-- ✅ Works with any JVM process
-- ✅ Minimal performance impact
-- ✅ Safe for production use
+- No JVM agent installation required
+- No JVM restarts needed
+- Works with any JVM process
+- Minimal performance impact
+- Safe for production use
 
----
-
-## 🛠️ Development
+## Development
 
 ### Build from Source
 
@@ -269,11 +257,11 @@ cargo check
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! This project is in active development.
 
-**Phase 1 (MVP)** ✅ Complete
+**Phase 1 (MVP)** Complete
 - JVM discovery and connection
 - Real-time metrics collection
 - Overview and Memory views
@@ -287,9 +275,7 @@ Contributions are welcome! This project is in active development.
 
 See [docs/14-implementation-phases.md](docs/14-implementation-phases.md) for detailed roadmap.
 
----
-
-## 📄 License
+## License
 
 This project is dual-licensed under:
 
@@ -297,8 +283,6 @@ This project is dual-licensed under:
 - Apache License 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
 
 You may choose either license for your use.
-
----
 
 ## 🙏 Acknowledgments
 
@@ -309,9 +293,7 @@ Built with:
 
 Inspired by [VisualVM](https://visualvm.github.io/) and modern CLI tools like [htop](https://htop.dev/).
 
----
-
-## 📧 Contact
+## Contact
 
 **Anurag Ambuj**
 - GitHub: [@AnuragAmbuj](https://github.com/AnuragAmbuj)
