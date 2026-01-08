@@ -362,57 +362,129 @@ A polished monitoring tool with:
 
 ---
 
-## Phase 3: Advanced Features (Weeks 7-9)
+## Phase 3: Remote Monitoring & Configuration (Weeks 7-9)
 
 ### Goals
-- Remote JVM support
+- Remote JVM support via Jolokia
 - Configuration persistence
-- Export capabilities
+- Enhanced export capabilities
+- SSH tunnel support for secure access
+
+**Note**: JFR integration moved to Phase 4 for focused implementation
 
 ### Checklist
 
-#### 3.1 Jolokia Connector
-- [ ] HTTP client setup
-- [ ] JolokiaConnector implementation
-- [ ] Remote JVM connection
+#### 3.1 Configuration File System
+- [ ] TOML config loading from XDG/home directories
+- [ ] Saved connection profiles (local, Jolokia, SSH)
+- [ ] Persistent user preferences
+- [ ] Config validation and defaults
+- [ ] CLI arg overrides
 
-**Files created:**
+**Files to create:**
+```
+src/config.rs (~150 lines)
+config.example.toml (example config)
+docs/configuration.md (config guide)
+```
+
+#### 3.2 Enhanced Export Features
+- [ ] Export metrics to JSON ✅ (already done)
+- [ ] Export thread dump to file ✅ (already done)
+- [ ] Prometheus format export
+- [ ] CSV export for metrics
+- [ ] Configurable export paths
+- [ ] Export format selection UI
+
+**Files to modify:**
+```
+src/export.rs (add Prometheus and CSV exporters)
+src/tui/widgets/confirmation_dialog.rs (format selection)
+```
+
+#### 3.3 Jolokia Connector (Remote JVMs)
+- [ ] Add HTTP client dependencies (reqwest)
+- [ ] Define Jolokia request/response types
+- [ ] Implement JolokiaConnector trait
+- [ ] Map JMX MBeans to metrics
+- [ ] Handle basic authentication
+- [ ] Parse Jolokia JSON responses
+- [ ] Add to connection picker UI
+
+**Files to create:**
 ```
 src/jvm/jolokia/mod.rs
-src/jvm/jolokia/connector.rs
+src/jvm/jolokia/types.rs (~200 lines)
+src/jvm/jolokia/connector.rs (~400 lines)
+src/jvm/jolokia/parsers.rs (~300 lines)
 ```
 
-#### 3.2 SSH Tunnel Support
-- [ ] SSH connection handling
-- [ ] Port forwarding
-- [ ] Key-based auth
+#### 3.4 SSH Tunnel Support
+- [ ] Add SSH library dependencies (async-ssh2-tokio or thrussh)
+- [ ] Implement SSH tunnel manager
+- [ ] Support password authentication
+- [ ] Support key-based authentication
+- [ ] Port forwarding setup
+- [ ] Integrate with JolokiaConnector
+- [ ] Tunnel lifecycle management
+- [ ] Add to connection picker UI
 
-#### 3.3 Configuration File
-- [ ] TOML config loading
-- [ ] Saved connections
-- [ ] Persistent preferences
-
-**Files created:**
+**Files to create:**
 ```
-src/config.rs
+src/jvm/ssh/mod.rs
+src/jvm/ssh/tunnel.rs (~300 lines)
+src/jvm/jolokia/tunneled_connector.rs (~200 lines)
 ```
-
-#### 3.4 Export Features
-- [ ] Export metrics to JSON
-- [ ] Export thread dump to file
-- [ ] Prometheus format (optional)
-
-#### 3.5 JFR Integration
-- [ ] Start/stop JFR recording
-- [ ] JFR event streaming
-- [ ] Basic event viewer
 
 ### Phase 3 Deliverable
 A production-ready tool with:
-- Remote JVM monitoring
-- Configuration persistence
-- Export capabilities
-- Optional JFR support
+- Local JVM monitoring (Phase 1 & 2)
+- Remote JVM monitoring via Jolokia
+- SSH tunnel support for secure remote access
+- Persistent configuration with saved connections
+- Enhanced export formats (JSON, Prometheus, CSV)
+
+**Detailed plan**: See `docs/phase3-implementation-plan.md`
+
+---
+
+## Phase 4: JFR Integration & Advanced Features (Future)
+
+### Goals
+- Java Flight Recorder integration
+- Advanced profiling capabilities
+- Historical data analysis
+
+### Checklist
+
+#### 4.1 JFR Integration
+- [ ] Start/stop JFR recording via JMX
+- [ ] Download JFR files from remote JVMs
+- [ ] Parse JFR file format
+- [ ] Basic event viewer
+- [ ] Recording management UI
+
+**Files to create:**
+```
+src/jvm/jfr/mod.rs
+src/jvm/jfr/recorder.rs
+src/jvm/jfr/parser.rs
+src/tui/views/jfr.rs
+```
+
+#### 4.2 Advanced Features (Future)
+- [ ] Multi-JVM comparison view
+- [ ] Historical data persistence
+- [ ] Alerting system integration
+- [ ] Custom MBean queries
+- [ ] Plugin system for custom dashboards
+
+### Phase 4 Deliverable
+A comprehensive JVM monitoring and profiling tool with:
+- All Phase 1-3 features
+- JFR recording and analysis
+- Advanced profiling capabilities
+- Historical trend analysis
 
 ---
 
