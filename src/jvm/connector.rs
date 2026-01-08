@@ -10,6 +10,8 @@ pub trait JvmConnector: Send + Sync {
 
     async fn is_connected(&self) -> bool;
 
+    async fn reconnect(&mut self) -> Result<()>;
+
     async fn get_jvm_info(&self) -> Result<JvmInfo>;
 
     async fn get_heap_info(&self) -> Result<HeapInfo>;

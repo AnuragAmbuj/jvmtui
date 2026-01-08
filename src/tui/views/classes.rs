@@ -9,13 +9,17 @@ pub struct ClassesView;
 
 impl ClassesView {
     pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+        Self::render_with_scroll(frame, area, store, 0);
+    }
+
+    pub fn render_with_scroll(frame: &mut Frame, area: Rect, store: &MetricsStore, scroll: usize) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Length(7), Constraint::Min(0)])
             .split(area);
 
         Self::render_summary(frame, chunks[0], store);
-        Self::render_class_list(frame, chunks[1], store);
+        Self::render_class_list(frame, chunks[1], store, scroll);
     }
 
     fn render_summary(frame: &mut Frame, area: Rect, store: &MetricsStore) {
@@ -46,7 +50,7 @@ impl ClassesView {
         frame.render_widget(summary, area);
     }
 
-    fn render_class_list(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_class_list(frame: &mut Frame, area: Rect, store: &MetricsStore, scroll: usize) {
         let classes = &store.class_histogram;
 
         if classes.is_empty() {
@@ -73,6 +77,7 @@ impl ClassesView {
 
         let rows: Vec<Row> = classes
             .iter()
+            .skip(scroll)
             .take(100)
             .map(|class| {
                 let mb = class.bytes as f64 / 1024.0 / 1024.0;

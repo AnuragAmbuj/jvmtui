@@ -1,7 +1,8 @@
 use crate::jvm::types::{ClassInfo, GcStats, HeapInfo, ThreadInfo};
 use crate::metrics::ring_buffer::RingBuffer;
+use serde::Serialize;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct MetricsStore {
     pub heap_history: RingBuffer<HeapInfo>,
     pub gc_history: RingBuffer<GcStats>,

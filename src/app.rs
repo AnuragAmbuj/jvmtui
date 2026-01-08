@@ -65,11 +65,23 @@ impl Tab {
     }
 }
 
+pub enum AppMode {
+    Normal,
+    Help,
+    ConfirmGc,
+    ConfirmExport,
+    Error(String),
+    Loading(String),
+    ExportSuccess(String),
+}
+
 pub struct App {
     pub should_quit: bool,
     pub current_tab: Tab,
     pub jvm_info: Option<JvmInfo>,
     pub metrics_store: Arc<RwLock<MetricsStore>>,
+    pub mode: AppMode,
+    pub scroll_offset: usize,
 }
 
 impl App {
@@ -79,6 +91,8 @@ impl App {
             current_tab: Tab::Overview,
             jvm_info: None,
             metrics_store,
+            mode: AppMode::Normal,
+            scroll_offset: 0,
         }
     }
 
@@ -88,20 +102,78 @@ impl App {
 
     pub fn next_tab(&mut self) {
         self.current_tab = self.current_tab.next();
+        self.scroll_offset = 0;
     }
 
     pub fn previous_tab(&mut self) {
         self.current_tab = self.current_tab.previous();
+        self.scroll_offset = 0;
     }
 
     pub fn select_tab(&mut self, index: usize) {
         if let Some(tab) = Tab::from_index(index) {
             self.current_tab = tab;
+            self.scroll_offset = 0;
         }
     }
 
     pub fn set_jvm_info(&mut self, info: JvmInfo) {
         self.jvm_info = Some(info);
+    }
+
+    pub fn toggle_help(&mut self) {
+        self.mode = match self.mode {
+            AppMode::Help => AppMode::Normal,
+            _ => AppMode::Help,
+        };
+    }
+
+    pub fn show_gc_confirmation(&mut self) {
+        self.mode = AppMode::ConfirmGc;
+    }
+
+    pub fn show_export_confirmation(&mut self) {
+        self.mode = AppMode::ConfirmExport;
+    }
+
+    pub fn cancel_confirmation(&mut self) {
+        self.mode = AppMode::Normal;
+    }
+
+    pub fn show_export_success(&mut self, path: String) {
+        self.mode = AppMode::ExportSuccess(path);
+    }
+
+    pub fn scroll_down(&mut self) {
+        self.scroll_offset = self.scroll_offset.saturating_add(1);
+    }
+
+    pub fn scroll_up(&mut self) {
+        self.scroll_offset = self.scroll_offset.saturating_sub(1);
+    }
+
+    pub fn reset_scroll(&mut self) {
+        self.scroll_offset = 0;
+    }
+
+    pub fn show_error(&mut self, message: String) {
+        self.mode = AppMode::Error(message);
+    }
+
+    pub fn clear_error(&mut self) {
+        if matches!(self.mode, AppMode::Error(_)) {
+            self.mode = AppMode::Normal;
+        }
+    }
+
+    pub fn show_loading(&mut self, message: String) {
+        self.mode = AppMode::Loading(message);
+    }
+
+    pub fn clear_loading(&mut self) {
+        if matches!(self.mode, AppMode::Loading(_)) {
+            self.mode = AppMode::Normal;
+        }
     }
 }
 

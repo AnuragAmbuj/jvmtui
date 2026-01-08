@@ -1,8 +1,12 @@
-use crate::app::{App, Tab};
+use crate::app::{App, AppMode, Tab};
 use crate::metrics::store::MetricsStore;
 use crate::tui::views::{
     classes::ClassesView, gc::GcView, memory::MemoryView, overview::OverviewView,
     threads::ThreadsView,
+};
+use crate::tui::widgets::{
+    confirmation_dialog::ConfirmationDialog, error_screen::ErrorScreen, help_overlay::HelpOverlay,
+    loading_screen::LoadingScreen,
 };
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -28,6 +32,42 @@ impl MonitoringScreen {
         Self::render_tabs(frame, chunks[1], app);
         Self::render_content(frame, chunks[2], app, store);
         Self::render_footer(frame, chunks[3], app);
+
+        match &app.mode {
+            AppMode::Help => {
+                HelpOverlay::render(frame, frame.area());
+            }
+            AppMode::ConfirmGc => {
+                ConfirmationDialog::render(
+                    frame,
+                    frame.area(),
+                    "Trigger Garbage Collection",
+                    "Are you sure you want to trigger a garbage collection?\n\nThis may pause the JVM briefly.",
+                );
+            }
+            AppMode::ConfirmExport => {
+                let message = match app.current_tab {
+                    Tab::Threads => "Export thread dump to file?",
+                    _ => "Export current metrics to JSON file?",
+                };
+                ConfirmationDialog::render(frame, frame.area(), "Export Data", message);
+            }
+            AppMode::ExportSuccess(path) => {
+                ConfirmationDialog::render(
+                    frame,
+                    frame.area(),
+                    "Export Successful",
+                    &format!("Data exported to:\n\n{}\n\nPress Enter to continue", path),
+                );
+            }
+            AppMode::Error(message) => {
+                ErrorScreen::render(frame, frame.area(), message);
+            }
+            AppMode::Loading(message) => {
+                LoadingScreen::render(frame, frame.area(), message);
+            }
+            AppMode::Normal => {}
+        }
     }
 
     fn render_header(frame: &mut Frame, area: Rect, app: &App) {
@@ -89,13 +129,13 @@ impl MonitoringScreen {
                 MemoryView::render(frame, area, store);
             }
             Tab::Threads => {
-                ThreadsView::render(frame, area, store);
+                ThreadsView::render_with_scroll(frame, area, store, app.scroll_offset);
             }
             Tab::GC => {
                 GcView::render(frame, area, store);
             }
             Tab::Classes => {
-                ClassesView::render(frame, area, store);
+                ClassesView::render_with_scroll(frame, area, store, app.scroll_offset);
             }
         }
     }
@@ -103,12 +143,20 @@ impl MonitoringScreen {
     fn render_footer(frame: &mut Frame, area: Rect, app: &App) {
         let footer_text = match app.current_tab {
             Tab::Overview => {
-                "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | r: Reset | q: Quit"
+                "1-5: Switch Tab | h/l/←/→: Prev/Next | g: Trigger GC | r: Reset | ?: Help | q: Quit"
             }
-            Tab::Memory => "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | r: Reset | q: Quit",
-            Tab::Threads => "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | r: Reset | q: Quit",
-            Tab::GC => "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | r: Reset | q: Quit",
-            Tab::Classes => "1-5: Switch Tab | h/l: Prev/Next | g: Trigger GC | r: Reset | q: Quit",
+            Tab::Memory => {
+                "1-5: Switch Tab | h/l/←/→: Prev/Next | g: Trigger GC | r: Reset | ?: Help | q: Quit"
+            }
+            Tab::Threads => {
+                "1-5: Switch Tab | j/k/↑/↓: Scroll | g: Trigger GC | r: Reset | ?: Help | q: Quit"
+            }
+            Tab::GC => {
+                "1-5: Switch Tab | h/l/←/→: Prev/Next | g: Trigger GC | r: Reset | ?: Help | q: Quit"
+            }
+            Tab::Classes => {
+                "1-5: Switch Tab | j/k/↑/↓: Scroll | g: Trigger GC | r: Reset | ?: Help | q: Quit"
+            }
         };
 
         let footer = Paragraph::new(footer_text)

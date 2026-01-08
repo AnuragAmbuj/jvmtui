@@ -140,6 +140,17 @@ impl JvmConnector for JdkToolsConnector {
         self.pid.is_some()
     }
 
+    async fn reconnect(&mut self) -> Result<()> {
+        if let Some(pid) = self.pid {
+            self.disconnect().await?;
+            self.connect(pid).await
+        } else {
+            Err(crate::error::AppError::Connection(
+                "No PID to reconnect to".to_string(),
+            ))
+        }
+    }
+
     async fn get_jvm_info(&self) -> Result<JvmInfo> {
         let cache = self.cache.read().await;
         cache

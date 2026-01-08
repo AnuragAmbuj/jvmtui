@@ -11,13 +11,17 @@ pub struct ThreadsView;
 
 impl ThreadsView {
     pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+        Self::render_with_scroll(frame, area, store, 0);
+    }
+
+    pub fn render_with_scroll(frame: &mut Frame, area: Rect, store: &MetricsStore, scroll: usize) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Length(9), Constraint::Min(0)])
             .split(area);
 
         Self::render_summary_section(frame, chunks[0], store);
-        Self::render_thread_list(frame, chunks[1], store);
+        Self::render_thread_list(frame, chunks[1], store, scroll);
     }
 
     fn render_summary_section(frame: &mut Frame, area: Rect, store: &MetricsStore) {
@@ -54,7 +58,7 @@ impl ThreadsView {
         frame.render_widget(summary, area);
     }
 
-    fn render_thread_list(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_thread_list(frame: &mut Frame, area: Rect, store: &MetricsStore, scroll: usize) {
         let threads = &store.thread_snapshot;
 
         let header = Row::new(vec![
@@ -67,6 +71,7 @@ impl ThreadsView {
 
         let rows: Vec<Row> = threads
             .iter()
+            .skip(scroll)
             .take(50)
             .map(|thread| {
                 let state_color = match thread.state {

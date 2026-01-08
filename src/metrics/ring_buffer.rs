@@ -1,6 +1,7 @@
+use serde::Serialize;
 use std::collections::VecDeque;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct RingBuffer<T: Clone> {
     buffer: VecDeque<T>,
     capacity: usize,

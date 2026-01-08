@@ -24,4 +24,7 @@ pub enum AppError {
 
     #[error("Process error: {0}")]
     Process(String),
+
+    #[error("Serialization error: {0}")]
+    Serialization(#[from] serde_json::Error),
 }

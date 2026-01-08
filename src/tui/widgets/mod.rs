@@ -1,4 +1,8 @@
+pub mod confirmation_dialog;
+pub mod error_screen;
 pub mod help_footer;
+pub mod help_overlay;
+pub mod loading_screen;
 pub mod memory_gauge;
 pub mod sparkline_panel;
 pub mod stat_card;
