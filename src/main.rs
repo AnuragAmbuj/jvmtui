@@ -7,8 +7,10 @@ use jvm_tui::{
     config::{Config, ConnectionProfile},
     export,
     jvm::{
-        connector::JvmConnector, discovery::discover_local_jvms,
+        connector::JvmConnector,
+        discovery::{discover_local_jvms, DiscoveredJvm},
         jdk_tools::connector::JdkToolsConnector,
+        jolokia::connector::JolokiaConnector,
     },
     metrics::{collector::MetricsCollector, store::MetricsStore},
     theme::Theme,
@@ -19,6 +21,15 @@ use jvm_tui::{
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
+
+enum SelectedConnection {
+    LocalJvm(DiscoveredJvm),
+    Jolokia {
+        url: String,
+        username: Option<String>,
+        password: Option<String>,
+    },
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -44,7 +55,7 @@ async fn main() -> Result<()> {
     let mut terminal = terminal::setup_terminal()?;
     let mut picker = JvmPickerScreen::new(jvms.clone(), config.connections.clone());
 
-    let selected_jvm = loop {
+    let selected_connection = loop {
         terminal.draw(|frame| {
             picker.render(frame, &Theme);
         })?;
@@ -69,7 +80,7 @@ async fn main() -> Result<()> {
                                 ConnectionProfile::Local { pid: Some(pid), .. } => {
                                     // Find the JVM with this PID
                                     if let Some(jvm) = jvms.iter().find(|j| j.pid == *pid) {
-                                        break jvm.clone();
+                                        break SelectedConnection::LocalJvm(jvm.clone());
                                     } else {
                                         // PID not found, show error and continue
                                         terminal::restore_terminal(&mut terminal)?;
@@ -83,19 +94,32 @@ async fn main() -> Result<()> {
                                     eprintln!("Error: Local connection must specify a PID");
                                     return Ok(());
                                 }
-                                ConnectionProfile::Jolokia { .. }
-                                | ConnectionProfile::SshJolokia { .. } => {
-                                    // Remote connections not yet supported
+                                ConnectionProfile::Jolokia {
+                                    url,
+                                    username,
+                                    password,
+                                    ..
+                                } => {
+                                    break SelectedConnection::Jolokia {
+                                        url: url.clone(),
+                                        username: username.clone(),
+                                        password: password.clone(),
+                                    };
+                                }
+                                ConnectionProfile::SshJolokia { .. } => {
+                                    // SSH tunneling coming in Phase 3.4
                                     terminal::restore_terminal(&mut terminal)?;
-                                    println!("Remote connections (Jolokia/SSH) will be available in Phase 3.3-3.4");
-                                    println!("For now, please select a local JVM process.");
+                                    println!(
+                                        "SSH tunnel connections will be available in Phase 3.4"
+                                    );
+                                    println!("For now, please use direct Jolokia connections or local JVMs.");
                                     return Ok(());
                                 }
                             }
                         }
                         // Handle discovered JVM selection
                         else if let Some(jvm) = picker.selected_jvm() {
-                            break jvm.clone();
+                            break SelectedConnection::LocalJvm(jvm.clone());
                         }
                     }
                     (KeyCode::Char('r'), _) => {
@@ -108,18 +132,31 @@ async fn main() -> Result<()> {
         }
     };
 
-    let mut connector = JdkToolsConnector::new();
-    connector.connect(selected_jvm.pid).await?;
-
-    let jvm_info = connector.get_jvm_info().await?;
+    let jvm_info;
+    let connector_arc: Arc<RwLock<dyn JvmConnector>> = match selected_connection {
+        SelectedConnection::LocalJvm(jvm) => {
+            let mut connector = JdkToolsConnector::new();
+            connector.connect(jvm.pid).await?;
+            jvm_info = connector.get_jvm_info().await?;
+            Arc::new(RwLock::new(connector))
+        }
+        SelectedConnection::Jolokia {
+            url,
+            username,
+            password,
+        } => {
+            let mut connector = JolokiaConnector::new(url, username, password);
+            connector.connect(0).await?;
+            jvm_info = connector.get_jvm_info().await?;
+            Arc::new(RwLock::new(connector))
+        }
+    };
 
     let interval = cli.interval.unwrap_or(config.preferences.default_interval);
     let history_size = config.preferences.max_history_samples;
     let store = Arc::new(RwLock::new(MetricsStore::new(history_size)));
     let mut app = App::new(store.clone());
     app.set_jvm_info(jvm_info);
-
-    let connector_arc: Arc<RwLock<dyn JvmConnector>> = Arc::new(RwLock::new(connector));
     let collector = MetricsCollector::new(connector_arc.clone(), store.clone(), interval);
 
     let collector_handle = tokio::spawn(async move {
