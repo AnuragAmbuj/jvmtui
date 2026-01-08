@@ -1,0 +1,84 @@
+# JVM-TUI Configuration File
+# Copy this file to one of these locations:
+#   - Linux/macOS: ~/.config/jvm-tui/config.toml
+#   - Windows: %APPDATA%\jvm-tui\config.toml
+#   - Current directory: ./config.toml
+#   - Or specify with: jvm-tui --config /path/to/config.toml
+
+# ============================================================================
+# Preferences
+# ============================================================================
+[preferences]
+# Default polling interval for metrics collection
+# Accepts: "250ms", "500ms", "1s", "2s", "5s", "10s"
+default_interval = "1s"
+
+# Maximum number of metric samples to retain in history
+# Higher values use more memory but provide longer history
+max_history_samples = 300
+
+# Default export directory for thread dumps and metrics
+# Supports environment variables: ${HOME}, ${TMPDIR}
+# Default: current directory
+export_directory = "${HOME}/jvm-tui-exports"
+
+# ============================================================================
+# Saved Connections
+# ============================================================================
+
+# Example: Local JVM by PID
+[[connections]]
+name = "Local Dev Server"
+type = "local"
+# Optional: Specify PID (omit for auto-discovery)
+# pid = 12345
+
+# Example: Remote JVM via Jolokia (HTTP)
+[[connections]]
+name = "Production API Server"
+type = "jolokia"
+url = "http://prod-api.example.com:8778/jolokia"
+# Optional: Basic authentication
+# username = "admin"
+# password = "secret"
+
+# Example: Remote JVM via SSH Tunnel + Jolokia
+[[connections]]
+name = "Staging Server (via SSH)"
+type = "ssh-jolokia"
+ssh_host = "staging.example.com"
+ssh_user = "deploy"
+ssh_port = 22
+# SSH authentication method (choose one):
+# Option 1: SSH key file
+ssh_key = "~/.ssh/id_rsa"
+# Option 2: SSH password (not recommended for production)
+# ssh_password = "secret"
+# Option 3: Use SSH agent (default if neither key nor password specified)
+
+# Jolokia port on the remote server
+jolokia_port = 8778
+# Optional: Local port for tunnel (auto-assigned if omitted)
+# local_port = 18778
+
+# Example: Another local JVM
+[[connections]]
+name = "IntelliJ IDEA"
+type = "local"
+# Auto-discover - will appear in picker
+
+# ============================================================================
+# Advanced Settings
+# ============================================================================
+[advanced]
+# HTTP timeout for Jolokia requests (in milliseconds)
+http_timeout_ms = 5000
+
+# SSH connection timeout (in seconds)
+ssh_timeout_sec = 10
+
+# Retry attempts for failed connections
+connection_retry_attempts = 3
+
+# Retry delay between attempts (in milliseconds)
+connection_retry_delay_ms = 1000

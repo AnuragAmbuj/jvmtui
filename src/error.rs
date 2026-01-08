@@ -22,6 +22,9 @@ pub enum AppError {
     #[error("Configuration error: {0}")]
     Config(String),
 
+    #[error("Configuration load error: {0}")]
+    ConfigLoad(String),
+
     #[error("Process error: {0}")]
     Process(String),
 

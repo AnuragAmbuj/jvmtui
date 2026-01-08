@@ -4,6 +4,7 @@ use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyModifiers};
 use jvm_tui::{
     app::{App, AppMode, Tab},
     cli::Cli,
+    config::Config,
     export,
     jvm::{
         connector::JvmConnector, discovery::discover_local_jvms,
@@ -24,6 +25,12 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
 
     let cli = Cli::parse();
+
+    let config = if let Some(ref config_path) = cli.config {
+        Config::load_from_file(config_path)?
+    } else {
+        Config::load()?
+    };
 
     let jvms = discover_local_jvms().await?;
 
@@ -74,8 +81,9 @@ async fn main() -> Result<()> {
 
     let jvm_info = connector.get_jvm_info().await?;
 
-    let interval = cli.interval.unwrap_or(Duration::from_secs(1));
-    let store = Arc::new(RwLock::new(MetricsStore::new(300)));
+    let interval = cli.interval.unwrap_or(config.preferences.default_interval);
+    let history_size = config.preferences.max_history_samples;
+    let store = Arc::new(RwLock::new(MetricsStore::new(history_size)));
     let mut app = App::new(store.clone());
     app.set_jvm_info(jvm_info);
 
