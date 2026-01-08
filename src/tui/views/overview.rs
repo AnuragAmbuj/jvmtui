@@ -1,4 +1,5 @@
 use crate::metrics::store::MetricsStore;
+use crate::theme::Theme;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -8,7 +9,7 @@ use ratatui::{
 pub struct OverviewView;
 
 impl OverviewView {
-    pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -18,12 +19,12 @@ impl OverviewView {
             ])
             .split(area);
 
-        Self::render_heap_section(frame, chunks[0], store);
-        Self::render_gc_section(frame, chunks[1], store);
-        Self::render_summary_section(frame, chunks[2], store);
+        Self::render_heap_section(frame, chunks[0], store, theme);
+        Self::render_gc_section(frame, chunks[1], store, theme);
+        Self::render_summary_section(frame, chunks[2], store, theme);
     }
 
-    fn render_heap_section(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_heap_section(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let inner = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
@@ -55,7 +56,7 @@ impl OverviewView {
                     .title(sparkline_title),
             )
             .data(&heap_data)
-            .style(Style::default().fg(Color::Cyan));
+            .style(Style::default().fg(theme.chart_line_primary()));
 
         frame.render_widget(sparkline, inner[0]);
 
@@ -66,13 +67,13 @@ impl OverviewView {
                 .gauge_style(
                     Style::default()
                         .fg(if ratio > 0.9 {
-                            Color::Red
+                            theme.memory_critical()
                         } else if ratio > 0.7 {
-                            Color::Yellow
+                            theme.memory_high()
                         } else {
-                            Color::Green
+                            theme.success()
                         })
-                        .bg(Color::Black),
+                        .bg(theme.gauge_background()),
                 )
                 .ratio(ratio);
 
@@ -80,7 +81,7 @@ impl OverviewView {
         }
     }
 
-    fn render_gc_section(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_gc_section(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let latest_gc = store.gc_history.iter().last();
 
         let gc_text = if let Some(gc) = latest_gc {
@@ -116,12 +117,12 @@ impl OverviewView {
                     .borders(Borders::ALL)
                     .title("GC Statistics"),
             )
-            .style(Style::default().fg(Color::White));
+            .style(Style::default().fg(theme.text()));
 
         frame.render_widget(gc_widget, area);
     }
 
-    fn render_summary_section(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_summary_section(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let latest_heap = store.heap_history.iter().last();
 
         let summary_text = if let Some(heap) = latest_heap {
@@ -155,7 +156,7 @@ impl OverviewView {
 
         let summary = Paragraph::new(summary_text)
             .block(Block::default().borders(Borders::ALL).title("Memory Pools"))
-            .style(Style::default().fg(Color::White));
+            .style(Style::default().fg(theme.text()));
 
         frame.render_widget(summary, area);
     }

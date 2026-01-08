@@ -1,3 +1,4 @@
+use crate::theme::Theme;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -7,7 +8,7 @@ use ratatui::{
 pub struct HelpOverlay;
 
 impl HelpOverlay {
-    pub fn render(frame: &mut Frame, area: Rect) {
+    pub fn render(frame: &mut Frame, area: Rect, theme: &Theme) {
         let popup_area = Self::centered_rect(80, 90, area);
 
         frame.render_widget(Clear, popup_area);
@@ -16,8 +17,8 @@ impl HelpOverlay {
             .title(" Help - Press ? or Esc to close ")
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Cyan))
-            .style(Style::default().bg(Color::Black));
+            .border_style(Style::default().fg(theme.border_focused()))
+            .style(Style::default().bg(theme.background()));
 
         frame.render_widget(outer_block, popup_area);
 
@@ -42,6 +43,7 @@ impl HelpOverlay {
             sections[0],
             "Global",
             vec![("q", "Quit application"), ("?", "Toggle this help screen")],
+            theme,
         );
 
         Self::render_section(
@@ -55,6 +57,7 @@ impl HelpOverlay {
                 ("Tab", "Next tab"),
                 ("Shift+Tab", "Previous tab"),
             ],
+            theme,
         );
 
         Self::render_section(
@@ -66,6 +69,7 @@ impl HelpOverlay {
                 ("r", "Reset metrics store"),
                 ("e", "Export current view data"),
             ],
+            theme,
         );
 
         Self::render_section(
@@ -80,6 +84,7 @@ impl HelpOverlay {
                 ("N", "Previous search result (during search)"),
                 ("Esc", "Cancel search (during search)"),
             ],
+            theme,
         );
 
         let about_text = "JVM-TUI v0.1.0\n\
@@ -93,22 +98,28 @@ impl HelpOverlay {
                 Block::default()
                     .borders(Borders::TOP)
                     .title(" About ")
-                    .border_style(Style::default().fg(Color::Gray)),
+                    .border_style(Style::default().fg(theme.border())),
             )
-            .style(Style::default().fg(Color::Gray))
+            .style(Style::default().fg(theme.text_dim()))
             .alignment(Alignment::Center)
             .wrap(Wrap { trim: true });
 
         frame.render_widget(about, sections[4]);
     }
 
-    fn render_section(frame: &mut Frame, area: Rect, title: &str, keybindings: Vec<(&str, &str)>) {
+    fn render_section(
+        frame: &mut Frame,
+        area: Rect,
+        title: &str,
+        keybindings: Vec<(&str, &str)>,
+        theme: &Theme,
+    ) {
         let rows: Vec<Row> = keybindings
             .iter()
             .map(|(key, desc)| {
                 Row::new(vec![
-                    Cell::from(*key).style(Style::default().fg(Color::Yellow).bold()),
-                    Cell::from(*desc).style(Style::default().fg(Color::White)),
+                    Cell::from(*key).style(Style::default().fg(theme.highlight()).bold()),
+                    Cell::from(*desc).style(Style::default().fg(theme.text())),
                 ])
             })
             .collect();
@@ -118,7 +129,7 @@ impl HelpOverlay {
                 Block::default()
                     .borders(Borders::TOP)
                     .title(format!(" {} ", title))
-                    .border_style(Style::default().fg(Color::Gray)),
+                    .border_style(Style::default().fg(theme.border())),
             )
             .column_spacing(2);
 

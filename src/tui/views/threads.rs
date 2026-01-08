@@ -1,5 +1,6 @@
 use crate::jvm::types::ThreadState;
 use crate::metrics::store::MetricsStore;
+use crate::theme::Theme;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -10,18 +11,24 @@ use std::collections::HashMap;
 pub struct ThreadsView;
 
 impl ThreadsView {
-    pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore) {
-        Self::render_with_scroll(frame, area, store, 0);
+    pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
+        Self::render_with_scroll(frame, area, store, 0, theme);
     }
 
-    pub fn render_with_scroll(frame: &mut Frame, area: Rect, store: &MetricsStore, scroll: usize) {
+    pub fn render_with_scroll(
+        frame: &mut Frame,
+        area: Rect,
+        store: &MetricsStore,
+        scroll: usize,
+        theme: &Theme,
+    ) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Length(9), Constraint::Min(0)])
             .split(area);
 
-        Self::render_summary_section(frame, chunks[0], store);
-        Self::render_thread_list(frame, chunks[1], store, scroll);
+        Self::render_summary_section(frame, chunks[0], store, theme);
+        Self::render_thread_list(frame, chunks[1], store, scroll, theme);
     }
 
     pub fn search_threads(store: &MetricsStore, query: &str) -> Vec<usize> {
@@ -46,7 +53,7 @@ impl ThreadsView {
             .collect()
     }
 
-    fn render_summary_section(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_summary_section(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let threads = &store.thread_snapshot;
 
         let mut state_counts: HashMap<ThreadState, usize> = HashMap::new();
@@ -75,19 +82,25 @@ impl ThreadsView {
                     .borders(Borders::ALL)
                     .title("Thread Summary"),
             )
-            .style(Style::default().fg(Color::White));
+            .style(Style::default().fg(theme.text()));
 
         frame.render_widget(summary, area);
     }
 
-    fn render_thread_list(frame: &mut Frame, area: Rect, store: &MetricsStore, scroll: usize) {
+    fn render_thread_list(
+        frame: &mut Frame,
+        area: Rect,
+        store: &MetricsStore,
+        scroll: usize,
+        theme: &Theme,
+    ) {
         let threads = &store.thread_snapshot;
 
         let header = Row::new(vec![
-            Cell::from("ID").style(Style::default().fg(Color::Yellow)),
-            Cell::from("Name").style(Style::default().fg(Color::Yellow)),
-            Cell::from("State").style(Style::default().fg(Color::Yellow)),
-            Cell::from("Stack Depth").style(Style::default().fg(Color::Yellow)),
+            Cell::from("ID").style(Style::default().fg(theme.highlight())),
+            Cell::from("Name").style(Style::default().fg(theme.highlight())),
+            Cell::from("State").style(Style::default().fg(theme.highlight())),
+            Cell::from("Stack Depth").style(Style::default().fg(theme.highlight())),
         ])
         .height(1);
 
@@ -97,12 +110,12 @@ impl ThreadsView {
             .take(50)
             .map(|thread| {
                 let state_color = match thread.state {
-                    ThreadState::Runnable => Color::Green,
-                    ThreadState::Blocked => Color::Red,
-                    ThreadState::Waiting => Color::Yellow,
-                    ThreadState::TimedWaiting => Color::Cyan,
-                    ThreadState::Terminated => Color::Gray,
-                    ThreadState::New => Color::Blue,
+                    ThreadState::Runnable => theme.thread_state_runnable(),
+                    ThreadState::Blocked => theme.thread_state_blocked(),
+                    ThreadState::Waiting => theme.thread_state_waiting(),
+                    ThreadState::TimedWaiting => theme.thread_state_timed_waiting(),
+                    ThreadState::Terminated => theme.thread_state_terminated(),
+                    ThreadState::New => theme.thread_state_new(),
                 };
 
                 let state_str = match thread.state {
@@ -138,7 +151,7 @@ impl ThreadsView {
                 .borders(Borders::ALL)
                 .title("Thread List (Top 50)"),
         )
-        .style(Style::default().fg(Color::White));
+        .style(Style::default().fg(theme.text()));
 
         frame.render_widget(table, area);
     }

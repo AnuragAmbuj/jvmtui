@@ -35,7 +35,7 @@ impl MonitoringScreen {
 
         match &app.mode {
             AppMode::Help => {
-                HelpOverlay::render(frame, frame.area());
+                HelpOverlay::render(frame, frame.area(), &app.theme);
             }
             AppMode::ConfirmGc => {
                 ConfirmationDialog::render(
@@ -43,6 +43,7 @@ impl MonitoringScreen {
                     frame.area(),
                     "Trigger Garbage Collection",
                     "Are you sure you want to trigger a garbage collection?\n\nThis may pause the JVM briefly.",
+                    &app.theme,
                 );
             }
             AppMode::ConfirmExport => {
@@ -50,7 +51,7 @@ impl MonitoringScreen {
                     Tab::Threads => "Export thread dump to file?",
                     _ => "Export current metrics to JSON file?",
                 };
-                ConfirmationDialog::render(frame, frame.area(), "Export Data", message);
+                ConfirmationDialog::render(frame, frame.area(), "Export Data", message, &app.theme);
             }
             AppMode::ExportSuccess(path) => {
                 ConfirmationDialog::render(
@@ -58,13 +59,14 @@ impl MonitoringScreen {
                     frame.area(),
                     "Export Successful",
                     &format!("Data exported to:\n\n{}\n\nPress Enter to continue", path),
+                    &app.theme,
                 );
             }
             AppMode::Error(message) => {
-                ErrorScreen::render(frame, frame.area(), message);
+                ErrorScreen::render(frame, frame.area(), message, &app.theme);
             }
             AppMode::Loading(message) => {
-                LoadingScreen::render(frame, frame.area(), message);
+                LoadingScreen::render(frame, frame.area(), message, &app.theme);
             }
             AppMode::Search => {
                 SearchBar::render(
@@ -73,6 +75,7 @@ impl MonitoringScreen {
                     &app.search_query,
                     app.search_results.len(),
                     app.search_index,
+                    &app.theme,
                 );
             }
             AppMode::Normal => {}
@@ -95,7 +98,7 @@ impl MonitoringScreen {
         let header = Paragraph::new(header_text)
             .style(
                 Style::default()
-                    .fg(Color::Cyan)
+                    .fg(app.theme.primary())
                     .add_modifier(Modifier::BOLD),
             )
             .block(Block::default().borders(Borders::ALL).title("JVM Info"));
@@ -113,11 +116,11 @@ impl MonitoringScreen {
                 if *tab == app.current_tab {
                     Line::from(format!("[{}]", title)).style(
                         Style::default()
-                            .fg(Color::Yellow)
+                            .fg(app.theme.highlight())
                             .add_modifier(Modifier::BOLD),
                     )
                 } else {
-                    Line::from(title).style(Style::default().fg(Color::Gray))
+                    Line::from(title).style(Style::default().fg(app.theme.text_dim()))
                 }
             })
             .collect();
@@ -132,19 +135,19 @@ impl MonitoringScreen {
     fn render_content(frame: &mut Frame, area: Rect, app: &App, store: &MetricsStore) {
         match app.current_tab {
             Tab::Overview => {
-                OverviewView::render(frame, area, store);
+                OverviewView::render(frame, area, store, &app.theme);
             }
             Tab::Memory => {
-                MemoryView::render(frame, area, store);
+                MemoryView::render(frame, area, store, &app.theme);
             }
             Tab::Threads => {
-                ThreadsView::render_with_scroll(frame, area, store, app.scroll_offset);
+                ThreadsView::render_with_scroll(frame, area, store, app.scroll_offset, &app.theme);
             }
             Tab::GC => {
-                GcView::render(frame, area, store);
+                GcView::render(frame, area, store, &app.theme);
             }
             Tab::Classes => {
-                ClassesView::render_with_scroll(frame, area, store, app.scroll_offset);
+                ClassesView::render_with_scroll(frame, area, store, app.scroll_offset, &app.theme);
             }
         }
     }
@@ -169,7 +172,7 @@ impl MonitoringScreen {
         };
 
         let footer = Paragraph::new(footer_text)
-            .style(Style::default().fg(Color::Gray))
+            .style(Style::default().fg(app.theme.text_dim()))
             .block(Block::default().borders(Borders::ALL).title("Controls"));
 
         frame.render_widget(footer, area);

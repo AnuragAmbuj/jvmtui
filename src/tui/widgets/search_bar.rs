@@ -1,3 +1,4 @@
+use crate::theme::Theme;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -13,6 +14,7 @@ impl SearchBar {
         query: &str,
         results_count: usize,
         current_index: usize,
+        theme: &Theme,
     ) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -32,12 +34,12 @@ impl SearchBar {
         let search_text = format!("Search: {}{}", query, result_info);
 
         let search_widget = Paragraph::new(search_text)
-            .style(Style::default().fg(Color::Yellow))
+            .style(Style::default().fg(theme.highlight()))
             .block(
                 Block::default()
                     .borders(Borders::ALL)
                     .title(" / to search | n: next | N: prev | Esc: cancel ")
-                    .border_style(Style::default().fg(Color::Cyan)),
+                    .border_style(Style::default().fg(theme.border_focused())),
             )
             .alignment(Alignment::Left);
 

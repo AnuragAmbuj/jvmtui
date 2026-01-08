@@ -1,5 +1,6 @@
 use crate::jvm::types::JvmInfo;
 use crate::metrics::store::MetricsStore;
+use crate::theme::Theme;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -86,6 +87,7 @@ pub struct App {
     pub search_query: String,
     pub search_results: Vec<usize>,
     pub search_index: usize,
+    pub theme: Theme,
 }
 
 impl App {
@@ -100,6 +102,7 @@ impl App {
             search_query: String::new(),
             search_results: Vec::new(),
             search_index: 0,
+            theme: Theme,
         }
     }
 

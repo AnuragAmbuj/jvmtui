@@ -1,3 +1,4 @@
+use crate::theme::Theme;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -7,7 +8,7 @@ use ratatui::{
 pub struct ErrorScreen;
 
 impl ErrorScreen {
-    pub fn render(frame: &mut Frame, area: Rect, error_message: &str) {
+    pub fn render(frame: &mut Frame, area: Rect, error_message: &str, theme: &Theme) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -30,8 +31,8 @@ impl ErrorScreen {
             .title(" Error ")
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Red))
-            .style(Style::default().bg(Color::Black));
+            .border_style(Style::default().fg(theme.error()))
+            .style(Style::default().bg(theme.background()));
 
         let inner_area = block.inner(centered);
         frame.render_widget(block, centered);
@@ -44,7 +45,7 @@ impl ErrorScreen {
         );
 
         let error_widget = Paragraph::new(error_text)
-            .style(Style::default().fg(Color::Red))
+            .style(Style::default().fg(theme.error()))
             .alignment(Alignment::Center)
             .wrap(Wrap { trim: true });
 

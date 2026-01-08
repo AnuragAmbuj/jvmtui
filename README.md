@@ -14,6 +14,7 @@
 - **Keyboard-Driven** - Full Vim-style navigation (no mouse needed)
 - **No Agents Required** - Uses standard JDK tools (jcmd, jstat, jps)
 - **SSH-Friendly** - Works perfectly over remote connections
+- **Terminal-Adaptive** - Automatically adapts to your terminal's color scheme
 - **TUI** - Responsive interface inside a terminal
 - **Lightweight** - Only 1.3MB binary with minimal resource usage
 
@@ -128,7 +129,30 @@ cargo build --release
 | `1-5` | Switch to tab (Overview, Memory, Threads, GC, Classes) |
 | `h` / `←` | Previous tab |
 | `l` / `→` | Next tab |
+| `j` / `↓` | Scroll down (Threads/Classes views) |
+| `k` / `↑` | Scroll up (Threads/Classes views) |
+| `/` | Search threads (Threads view) |
+| `g` | Trigger garbage collection |
+| `r` | Reset metrics |
+| `e` | Export data |
+| `?` | Show help |
 | `q` | Disconnect and quit |
+
+## Terminal Compatibility
+
+JVM-TUI automatically adapts to your terminal's color scheme using:
+
+- **Color::Reset** - Uses your terminal's default foreground/background colors
+- **ANSI color palette** - Standard colors (Red, Green, Yellow, Cyan, etc.) that terminals automatically adapt
+- **Indexed colors** - Terminal-native color codes for dimmed text
+
+This means JVM-TUI works correctly on:
+- ✅ Dark terminals (black/dark gray background)
+- ✅ Light terminals (white/light gray background)  
+- ✅ Custom terminal themes (Solarized, Nord, Dracula, etc.)
+- ✅ macOS Terminal, iTerm2, Alacritty, Kitty, tmux, etc.
+
+No configuration needed - it just works!
 
 ## Requirements
 

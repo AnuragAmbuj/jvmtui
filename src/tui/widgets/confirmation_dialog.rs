@@ -1,3 +1,4 @@
+use crate::theme::Theme;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -7,7 +8,7 @@ use ratatui::{
 pub struct ConfirmationDialog;
 
 impl ConfirmationDialog {
-    pub fn render(frame: &mut Frame, area: Rect, title: &str, message: &str) {
+    pub fn render(frame: &mut Frame, area: Rect, title: &str, message: &str, theme: &Theme) {
         let popup_area = Self::centered_rect(50, 25, area);
 
         frame.render_widget(Clear, popup_area);
@@ -16,8 +17,8 @@ impl ConfirmationDialog {
             .title(format!(" {} ", title))
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Yellow))
-            .style(Style::default().bg(Color::Black));
+            .border_style(Style::default().fg(theme.warning()))
+            .style(Style::default().bg(theme.background()));
 
         frame.render_widget(outer_block.clone(), popup_area);
 
@@ -32,19 +33,19 @@ impl ConfirmationDialog {
             .split(inner_area);
 
         let message_widget = Paragraph::new(message)
-            .style(Style::default().fg(Color::White))
+            .style(Style::default().fg(theme.text()))
             .alignment(Alignment::Center)
             .wrap(Wrap { trim: true });
 
         frame.render_widget(message_widget, chunks[0]);
 
         let prompt = Paragraph::new("Press [Y] to confirm, [N] to cancel")
-            .style(Style::default().fg(Color::Gray))
+            .style(Style::default().fg(theme.text_dim()))
             .alignment(Alignment::Center)
             .block(
                 Block::default()
                     .borders(Borders::TOP)
-                    .border_style(Style::default().fg(Color::Gray)),
+                    .border_style(Style::default().fg(theme.border())),
             );
 
         frame.render_widget(prompt, chunks[1]);

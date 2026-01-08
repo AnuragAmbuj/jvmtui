@@ -1,5 +1,6 @@
 use crate::jvm::types::GcStats;
 use crate::metrics::store::MetricsStore;
+use crate::theme::Theme;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -9,7 +10,7 @@ use ratatui::{
 pub struct GcView;
 
 impl GcView {
-    pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -19,12 +20,12 @@ impl GcView {
             ])
             .split(area);
 
-        Self::render_gc_summary(frame, chunks[0], store);
-        Self::render_gc_timeline(frame, chunks[1], store);
-        Self::render_gc_stats(frame, chunks[2], store);
+        Self::render_gc_summary(frame, chunks[0], store, theme);
+        Self::render_gc_timeline(frame, chunks[1], store, theme);
+        Self::render_gc_stats(frame, chunks[2], store, theme);
     }
 
-    fn render_gc_summary(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_gc_summary(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let latest_gc = store.gc_history.iter().last();
 
         let summary_text = if let Some(gc) = latest_gc {
@@ -62,18 +63,18 @@ impl GcView {
 
         let summary = Paragraph::new(summary_text)
             .block(Block::default().borders(Borders::ALL).title("GC Summary"))
-            .style(Style::default().fg(Color::White));
+            .style(Style::default().fg(theme.text()));
 
         frame.render_widget(summary, area);
     }
 
-    fn render_gc_timeline(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_gc_timeline(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let gc_history: Vec<&GcStats> = store.gc_history.iter().collect();
 
         if gc_history.is_empty() {
             let placeholder = Paragraph::new("Waiting for GC data...")
                 .block(Block::default().borders(Borders::ALL).title("GC Timeline"))
-                .style(Style::default().fg(Color::Gray));
+                .style(Style::default().fg(theme.text_dim()));
             frame.render_widget(placeholder, area);
             return;
         }
@@ -109,13 +110,13 @@ impl GcView {
                 .name("Young GC")
                 .marker(symbols::Marker::Dot)
                 .graph_type(GraphType::Line)
-                .style(Style::default().fg(Color::Cyan))
+                .style(Style::default().fg(theme.chart_line_primary()))
                 .data(&young_data),
             Dataset::default()
                 .name("Full GC")
                 .marker(symbols::Marker::Dot)
                 .graph_type(GraphType::Line)
-                .style(Style::default().fg(Color::Red))
+                .style(Style::default().fg(theme.chart_line_secondary()))
                 .data(&old_data),
         ];
 
@@ -128,20 +129,20 @@ impl GcView {
             .x_axis(
                 Axis::default()
                     .title("Samples")
-                    .style(Style::default().fg(Color::Gray))
+                    .style(Style::default().fg(theme.text_dim()))
                     .bounds([0.0, gc_history.len() as f64]),
             )
             .y_axis(
                 Axis::default()
                     .title("Count")
-                    .style(Style::default().fg(Color::Gray))
+                    .style(Style::default().fg(theme.text_dim()))
                     .bounds([0.0, max_count]),
             );
 
         frame.render_widget(chart, area);
     }
 
-    fn render_gc_stats(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_gc_stats(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let gc_history: Vec<&GcStats> = store.gc_history.iter().collect();
 
         if gc_history.is_empty() {
@@ -151,7 +152,7 @@ impl GcView {
                         .borders(Borders::ALL)
                         .title("GC Statistics"),
                 )
-                .style(Style::default().fg(Color::Gray));
+                .style(Style::default().fg(theme.text_dim()));
             frame.render_widget(placeholder, area);
             return;
         }
@@ -204,7 +205,7 @@ impl GcView {
                     .borders(Borders::ALL)
                     .title("GC Statistics"),
             )
-            .style(Style::default().fg(Color::White));
+            .style(Style::default().fg(theme.text()));
 
         frame.render_widget(stats, area);
     }

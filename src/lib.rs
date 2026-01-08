@@ -5,4 +5,5 @@ pub mod error;
 pub mod export;
 pub mod jvm;
 pub mod metrics;
+pub mod theme;
 pub mod tui;

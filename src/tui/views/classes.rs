@@ -1,4 +1,5 @@
 use crate::metrics::store::MetricsStore;
+use crate::theme::Theme;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -8,21 +9,27 @@ use ratatui::{
 pub struct ClassesView;
 
 impl ClassesView {
-    pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore) {
-        Self::render_with_scroll(frame, area, store, 0);
+    pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
+        Self::render_with_scroll(frame, area, store, 0, theme);
     }
 
-    pub fn render_with_scroll(frame: &mut Frame, area: Rect, store: &MetricsStore, scroll: usize) {
+    pub fn render_with_scroll(
+        frame: &mut Frame,
+        area: Rect,
+        store: &MetricsStore,
+        scroll: usize,
+        theme: &Theme,
+    ) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Length(7), Constraint::Min(0)])
             .split(area);
 
-        Self::render_summary(frame, chunks[0], store);
-        Self::render_class_list(frame, chunks[1], store, scroll);
+        Self::render_summary(frame, chunks[0], store, theme);
+        Self::render_class_list(frame, chunks[1], store, scroll, theme);
     }
 
-    fn render_summary(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_summary(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let classes = &store.class_histogram;
 
         let total_instances: u64 = classes.iter().map(|c| c.instances).sum();
@@ -45,12 +52,18 @@ impl ClassesView {
                     .borders(Borders::ALL)
                     .title("Class Histogram Summary"),
             )
-            .style(Style::default().fg(Color::White));
+            .style(Style::default().fg(theme.text()));
 
         frame.render_widget(summary, area);
     }
 
-    fn render_class_list(frame: &mut Frame, area: Rect, store: &MetricsStore, scroll: usize) {
+    fn render_class_list(
+        frame: &mut Frame,
+        area: Rect,
+        store: &MetricsStore,
+        scroll: usize,
+        theme: &Theme,
+    ) {
         let classes = &store.class_histogram;
 
         if classes.is_empty() {
@@ -60,18 +73,18 @@ impl ClassesView {
                  Wait a moment for data to appear...",
             )
             .block(Block::default().borders(Borders::ALL).title("Class List"))
-            .style(Style::default().fg(Color::Gray));
+            .style(Style::default().fg(theme.text_dim()));
 
             frame.render_widget(placeholder, area);
             return;
         }
 
         let header = Row::new(vec![
-            Cell::from("Rank").style(Style::default().fg(Color::Yellow)),
-            Cell::from("Instances").style(Style::default().fg(Color::Yellow)),
-            Cell::from("Bytes").style(Style::default().fg(Color::Yellow)),
-            Cell::from("MB").style(Style::default().fg(Color::Yellow)),
-            Cell::from("Class Name").style(Style::default().fg(Color::Yellow)),
+            Cell::from("Rank").style(Style::default().fg(theme.highlight())),
+            Cell::from("Instances").style(Style::default().fg(theme.highlight())),
+            Cell::from("Bytes").style(Style::default().fg(theme.highlight())),
+            Cell::from("MB").style(Style::default().fg(theme.highlight())),
+            Cell::from("Class Name").style(Style::default().fg(theme.highlight())),
         ])
         .height(1);
 
@@ -82,11 +95,11 @@ impl ClassesView {
             .map(|class| {
                 let mb = class.bytes as f64 / 1024.0 / 1024.0;
                 let color = if mb > 50.0 {
-                    Color::Red
+                    theme.memory_critical()
                 } else if mb > 10.0 {
-                    Color::Yellow
+                    theme.memory_high()
                 } else {
-                    Color::White
+                    theme.text()
                 };
 
                 Row::new(vec![
@@ -115,7 +128,7 @@ impl ClassesView {
                 .borders(Borders::ALL)
                 .title("Top 100 Classes by Memory Usage"),
         )
-        .style(Style::default().fg(Color::White));
+        .style(Style::default().fg(theme.text()));
 
         frame.render_widget(table, area);
     }

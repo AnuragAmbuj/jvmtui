@@ -1,3 +1,4 @@
+use crate::theme::Theme;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -7,7 +8,7 @@ use ratatui::{
 pub struct LoadingScreen;
 
 impl LoadingScreen {
-    pub fn render(frame: &mut Frame, area: Rect, message: &str) {
+    pub fn render(frame: &mut Frame, area: Rect, message: &str, theme: &Theme) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -30,8 +31,8 @@ impl LoadingScreen {
             .title(" Loading ")
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Cyan))
-            .style(Style::default().bg(Color::Black));
+            .border_style(Style::default().fg(theme.info()))
+            .style(Style::default().bg(theme.background()));
 
         let inner_area = block.inner(centered);
         frame.render_widget(block, centered);
@@ -39,7 +40,7 @@ impl LoadingScreen {
         let loading_text = format!("⏳ {}\n\nPlease wait...", message);
 
         let loading_widget = Paragraph::new(loading_text)
-            .style(Style::default().fg(Color::Cyan))
+            .style(Style::default().fg(theme.info()))
             .alignment(Alignment::Center);
 
         frame.render_widget(loading_widget, inner_area);

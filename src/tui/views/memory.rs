@@ -1,4 +1,5 @@
 use crate::metrics::store::MetricsStore;
+use crate::theme::Theme;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     prelude::*,
@@ -8,17 +9,17 @@ use ratatui::{
 pub struct MemoryView;
 
 impl MemoryView {
-    pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    pub fn render(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Length(10), Constraint::Min(0)])
             .split(area);
 
-        Self::render_heap_sparkline(frame, chunks[0], store);
-        Self::render_memory_pools(frame, chunks[1], store);
+        Self::render_heap_sparkline(frame, chunks[0], store, theme);
+        Self::render_memory_pools(frame, chunks[1], store, theme);
     }
 
-    fn render_heap_sparkline(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_heap_sparkline(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let heap_data: Vec<u64> = store
             .heap_history
             .iter()
@@ -42,12 +43,12 @@ impl MemoryView {
             )
             .data(&heap_data)
             .max(max_heap)
-            .style(Style::default().fg(Color::Cyan));
+            .style(Style::default().fg(theme.chart_line_primary()));
 
         frame.render_widget(sparkline, area);
     }
 
-    fn render_memory_pools(frame: &mut Frame, area: Rect, store: &MetricsStore) {
+    fn render_memory_pools(frame: &mut Frame, area: Rect, store: &MetricsStore, theme: &Theme) {
         let latest_heap = store.heap_history.iter().last();
 
         if let Some(heap) = latest_heap {
@@ -69,11 +70,11 @@ impl MemoryView {
                     };
 
                     let gauge_color = if ratio > 0.9 {
-                        Color::Red
+                        theme.memory_critical()
                     } else if ratio > 0.7 {
-                        Color::Yellow
+                        theme.memory_high()
                     } else {
-                        Color::Green
+                        theme.success()
                     };
 
                     let label = format!(
@@ -86,7 +87,11 @@ impl MemoryView {
 
                     let gauge = Gauge::default()
                         .block(Block::default().borders(Borders::ALL))
-                        .gauge_style(Style::default().fg(gauge_color).bg(Color::Black))
+                        .gauge_style(
+                            Style::default()
+                                .fg(gauge_color)
+                                .bg(theme.gauge_background()),
+                        )
                         .label(label)
                         .ratio(ratio);
 

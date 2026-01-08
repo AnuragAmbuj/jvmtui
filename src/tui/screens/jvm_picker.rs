@@ -1,4 +1,5 @@
 use crate::jvm::discovery::DiscoveredJvm;
+use crate::theme::Theme;
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
@@ -56,7 +57,7 @@ impl JvmPickerScreen {
         self.list_state.selected().and_then(|i| self.jvms.get(i))
     }
 
-    pub fn render(&mut self, frame: &mut Frame) {
+    pub fn render(&mut self, frame: &mut Frame, theme: &Theme) {
         let area = frame.area();
 
         let chunks = Layout::default()
@@ -71,7 +72,7 @@ impl JvmPickerScreen {
         let title = Paragraph::new("JVM-TUI - Select JVM Process")
             .style(
                 Style::default()
-                    .fg(Color::Cyan)
+                    .fg(theme.primary())
                     .add_modifier(Modifier::BOLD),
             )
             .block(Block::default().borders(Borders::ALL));
@@ -82,7 +83,7 @@ impl JvmPickerScreen {
             let empty_msg = Paragraph::new(
                 "No JVM processes found.\n\nMake sure you have running Java applications.",
             )
-            .style(Style::default().fg(Color::Yellow))
+            .style(Style::default().fg(theme.warning()))
             .block(Block::default().borders(Borders::ALL).title("Empty"));
             frame.render_widget(empty_msg, chunks[1]);
         } else {
@@ -91,7 +92,7 @@ impl JvmPickerScreen {
                 .iter()
                 .map(|jvm| {
                     let content = format!("PID: {} - {}", jvm.pid, truncate(&jvm.main_class, 80));
-                    ListItem::new(content).style(Style::default().fg(Color::White))
+                    ListItem::new(content).style(Style::default().fg(theme.text()))
                 })
                 .collect();
 
@@ -103,8 +104,8 @@ impl JvmPickerScreen {
                 )
                 .highlight_style(
                     Style::default()
-                        .bg(Color::Blue)
-                        .fg(Color::White)
+                        .bg(theme.primary())
+                        .fg(theme.background())
                         .add_modifier(Modifier::BOLD),
                 )
                 .highlight_symbol(">> ");
@@ -113,7 +114,7 @@ impl JvmPickerScreen {
         }
 
         let help = Paragraph::new("↑/k: Up | ↓/j: Down | Enter: Connect | r: Refresh | q: Quit")
-            .style(Style::default().fg(Color::Gray))
+            .style(Style::default().fg(theme.text_dim()))
             .block(Block::default().borders(Borders::ALL).title("Controls"));
 
         frame.render_widget(help, chunks[2]);

@@ -10,6 +10,7 @@ use jvm_tui::{
         jdk_tools::connector::JdkToolsConnector,
     },
     metrics::{collector::MetricsCollector, store::MetricsStore},
+    theme::Theme,
     tui::screens::{jvm_picker::JvmPickerScreen, monitoring::MonitoringScreen},
     tui::terminal,
     tui::views::threads::ThreadsView,
@@ -37,7 +38,7 @@ async fn main() -> Result<()> {
 
     let selected_jvm = loop {
         terminal.draw(|frame| {
-            picker.render(frame);
+            picker.render(frame, &Theme);
         })?;
 
         if event::poll(Duration::from_millis(100))? {
