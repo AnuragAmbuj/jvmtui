@@ -4,7 +4,7 @@ use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyModifiers};
 use jvm_tui::{
     app::{App, AppMode, Tab},
     cli::Cli,
-    config::Config,
+    config::{Config, ConnectionProfile},
     export,
     jvm::{
         connector::JvmConnector, discovery::discover_local_jvms,
@@ -34,14 +34,15 @@ async fn main() -> Result<()> {
 
     let jvms = discover_local_jvms().await?;
 
-    if jvms.is_empty() {
-        println!("No JVM processes found.");
-        println!("Make sure you have running Java applications.");
+    if jvms.is_empty() && config.connections.is_empty() {
+        println!("No JVM processes or saved connections found.");
+        println!("Make sure you have running Java applications, or");
+        println!("add saved connections to your config file.");
         return Ok(());
     }
 
     let mut terminal = terminal::setup_terminal()?;
-    let mut picker = JvmPickerScreen::new(jvms.clone());
+    let mut picker = JvmPickerScreen::new(jvms.clone(), config.connections.clone());
 
     let selected_jvm = loop {
         terminal.draw(|frame| {
@@ -62,13 +63,44 @@ async fn main() -> Result<()> {
                         picker.previous();
                     }
                     (KeyCode::Enter, _) => {
-                        if let Some(jvm) = picker.selected_jvm() {
+                        // Handle saved connection selection
+                        if let Some(conn) = picker.selected_connection() {
+                            match conn {
+                                ConnectionProfile::Local { pid: Some(pid), .. } => {
+                                    // Find the JVM with this PID
+                                    if let Some(jvm) = jvms.iter().find(|j| j.pid == *pid) {
+                                        break jvm.clone();
+                                    } else {
+                                        // PID not found, show error and continue
+                                        terminal::restore_terminal(&mut terminal)?;
+                                        eprintln!("Error: Saved connection references PID {} which is not running", pid);
+                                        return Ok(());
+                                    }
+                                }
+                                ConnectionProfile::Local { pid: None, .. } => {
+                                    // Local connection without PID - shouldn't happen in valid config
+                                    terminal::restore_terminal(&mut terminal)?;
+                                    eprintln!("Error: Local connection must specify a PID");
+                                    return Ok(());
+                                }
+                                ConnectionProfile::Jolokia { .. }
+                                | ConnectionProfile::SshJolokia { .. } => {
+                                    // Remote connections not yet supported
+                                    terminal::restore_terminal(&mut terminal)?;
+                                    println!("Remote connections (Jolokia/SSH) will be available in Phase 3.3-3.4");
+                                    println!("For now, please select a local JVM process.");
+                                    return Ok(());
+                                }
+                            }
+                        }
+                        // Handle discovered JVM selection
+                        else if let Some(jvm) = picker.selected_jvm() {
                             break jvm.clone();
                         }
                     }
                     (KeyCode::Char('r'), _) => {
                         let jvms = discover_local_jvms().await?;
-                        picker = JvmPickerScreen::new(jvms);
+                        picker = JvmPickerScreen::new(jvms, config.connections.clone());
                     }
                     _ => {}
                 }
