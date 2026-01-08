@@ -1,0 +1,293 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      release_url: ${{ steps.create_release.outputs.url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## Changelog
+
+            See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+
+            ## Installation
+
+            ### Pre-built Binaries
+            Download the binary for your platform from the assets below.
+
+            ### Package Managers
+
+            **macOS (Homebrew):**
+            ```bash
+            brew install jvm-tui
+            ```
+
+            **Ubuntu/Debian:**
+            ```bash
+            wget https://github.com/AnuragAmbuj/jvmtui/releases/download/${{ github.ref_name }}/jvm-tui_${{ github.ref_name }}_amd64.deb
+            sudo dpkg -i jvm-tui_${{ github.ref_name }}_amd64.deb
+            ```
+
+            **Fedora/RHEL:**
+            ```bash
+            wget https://github.com/AnuragAmbuj/jvmtui/releases/download/${{ github.ref_name }}/jvm-tui-${{ github.ref_name }}-1.x86_64.rpm
+            sudo dnf install jvm-tui-${{ github.ref_name }}-1.x86_64.rpm
+            ```
+
+            **Arch Linux:**
+            See the PKGBUILD in the release assets or install from AUR (coming soon).
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-linux:
+    name: Build Linux (x86_64)
+    needs: create-release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-gnu, x86_64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install musl-gcc
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Prepare archive
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf ../../../jvm-tui-${{ matrix.target }}.tar.gz jvm-tui
+          cd ../..
+
+      - name: Upload archive
+        uses: softprops/action-gh-release@v2
+        with:
+          files: jvm-tui-${{ matrix.target }}.tar.gz
+
+  build-linux-arm64:
+    name: Build Linux (aarch64)
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: aarch64-unknown-linux-gnu
+
+      - name: Install aarch64 cross-compilation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Build
+        run: cargo build --release --target aarch64-unknown-linux-gnu
+        env:
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+
+      - name: Prepare archive
+        run: |
+          cd target/aarch64-unknown-linux-gnu/release
+          tar czf ../../../jvm-tui-aarch64-unknown-linux-gnu.tar.gz jvm-tui
+          cd ../..
+
+      - name: Upload archive
+        uses: softprops/action-gh-release@v2
+        with:
+          files: jvm-tui-aarch64-unknown-linux-gnu.tar.gz
+
+  build-macos:
+    name: Build macOS
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-13
+            target: x86_64-apple-darwin
+            arch: x86_64
+          - os: macos-14
+            target: aarch64-apple-darwin
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Prepare archive
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf ../../../jvm-tui-macos-${{ matrix.arch }}.tar.gz jvm-tui
+          cd ../..
+
+      - name: Upload archive
+        uses: softprops/action-gh-release@v2
+        with:
+          files: jvm-tui-macos-${{ matrix.arch }}.tar.gz
+
+  package-deb:
+    name: Package DEB (Debian/Ubuntu)
+    needs: build-linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-gnu]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby-dev rpm
+          gem install fpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Create DEB package
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          ./scripts/package-deb.sh $VERSION target/${{ matrix.target }}/release/jvm-tui
+
+      - name: Upload DEB
+        uses: softprops/action-gh-release@v2
+        with:
+          files: jvm-tui_*.deb
+
+  package-rpm:
+    name: Package RPM (Fedora/RHEL)
+    needs: build-linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-gnu]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby-dev rpm
+          gem install fpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Create RPM package
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          ./scripts/package-rpm.sh $VERSION target/${{ matrix.target }}/release/jvm-tui
+
+      - name: Upload RPM
+        uses: softprops/action-gh-release@v2
+        with:
+          files: jvm-tui-*.rpm
+
+  package-arch:
+    name: Package Arch Linux
+    needs: build-linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Arch tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y base-devel
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build Arch package
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          docker run -v $PWD:/workdir archlinux:latest \
+            bash -c "cd /workdir && ./scripts/package-arch.sh $VERSION"
+
+      - name: Upload Arch package
+        uses: softprops/action-gh-release@v2
+        with:
+          files: jvm-tui-*.pkg.tar.zst
+
+  create-homebrew-tap:
+    name: Create Homebrew Formula
+    needs: build-macos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate Homebrew formula
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          ./scripts/generate-homebrew.sh $VERSION
+
+      - name: Create PR for Homebrew tap
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: homebrew-tap
+          commit-message: "Update jvm-tui to ${{ github.ref_name }}"
+          title: "jvm-tui ${{ github.ref_name }}"
+          body: |
+            Automated PR to update jvm-tui to version ${{ github.ref_name }}
+          branch: "jvm-tui-${{ github.ref_name }}"
+          base: main

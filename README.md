@@ -3,6 +3,7 @@
 > A lightweight terminal user interface for monitoring Java Virtual Machines - no agents required.
 
 [![CI](https://github.com/AnuragAmbuj/jvmtui/actions/workflows/ci.yml/badge.svg)](https://github.com/AnuragAmbuj/jvmtui/actions)
+[![Release](https://img.shields.io/github/v/release/AnuragAmbuj/jvmtui)](https://github.com/AnuragAmbuj/jvmtui/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
 **JVM-TUI** brings powerful JVM monitoring to your terminal with a keyboard-driven interface. Monitor heap usage, garbage collection, memory pools, and threads in real-time - perfect for SSH sessions and production environments where GUI tools aren't available.
@@ -179,6 +180,46 @@ java -javaagent:jolokia-jvm-1.7.1-agent.jar=port=8080 -jar your-app.jar
 - **JDK** 11+ with command-line tools (jcmd, jstat, jps)
 
 ### Installation
+
+#### Option 1: Package Manager (Recommended)
+
+**macOS (Homebrew):**
+```bash
+brew install jvm-tui
+```
+
+**Ubuntu/Debian:**
+```bash
+wget https://github.com/AnuragAmbuj/jvmtui/releases/latest/download/jvm-tui_latest_amd64.deb
+sudo dpkg -i jvm-tui_latest_amd64.deb
+```
+
+**Fedora/RHEL:**
+```bash
+wget https://github.com/AnuragAmbuj/jvmtui/releases/latest/download/jvm-tui-latest.x86_64.rpm
+sudo dnf install jvm-tui-latest.x86_64.rpm
+```
+
+**Arch Linux:**
+```bash
+# From AUR (recommended)
+yay -S jvm-tui
+
+# Or manually from PKGBUILD
+git clone https://aur.archlinux.org/jvm-tui.git
+cd jvm-tui
+makepkg -si
+```
+
+**Other Linux distributions:**
+```bash
+# Download pre-built binary
+wget https://github.com/AnuragAmbuj/jvmtui/releases/latest/download/jvm-tui-x86_64-unknown-linux-gnu.tar.gz
+tar -xzf jvm-tui-x86_64-unknown-linux-gnu.tar.gz
+sudo mv jvm-tui /usr/local/bin/
+```
+
+#### Option 2: Build from Source
 
 ```bash
 # Clone the repository
