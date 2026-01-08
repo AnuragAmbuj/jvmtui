@@ -219,11 +219,13 @@ async fn main() -> Result<()> {
                         KeyCode::Char('y') | KeyCode::Char('Y') => {
                             app.show_loading("Exporting data...".to_string());
                             let store_read = store.read().await;
+                            let export_dir = config.preferences.export_directory.as_deref();
                             let result = match app.current_tab {
-                                Tab::Threads => {
-                                    export::export_thread_dump(&store_read.thread_snapshot, None)
-                                }
-                                _ => export::export_metrics_json(&store_read, None),
+                                Tab::Threads => export::export_thread_dump(
+                                    &store_read.thread_snapshot,
+                                    export_dir,
+                                ),
+                                _ => export::export_metrics_json(&store_read, export_dir),
                             };
 
                             match result {
