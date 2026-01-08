@@ -1,2 +1,33 @@
 /target
+/Cargo.lock
+
+# Debian build artifacts
+/debian/.debhelper
+/debian/jvm-tui
+/debian/files
+/debian/*.log
+/debian/*.substvars
+/debian/debhelper-build-stamp
+/debian/cargo
+
+# RPM build artifacts
+/rpmbuild
+*.src.rpm
+*.rpm
+
+# Snap build artifacts
+/*.snap
+/parts
+/prime
+/stage
+
+# IDE
 /.idea
+/.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

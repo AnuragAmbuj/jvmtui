@@ -1,0 +1,34 @@
+Source: jvm-tui
+Section: utils
+Priority: optional
+Maintainer: Anurag Ambuj <anuragambuj@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13),
+               cargo,
+               rustc (>= 1.75),
+               pkg-config,
+               libssl-dev
+Standards-Version: 4.6.2
+Homepage: https://github.com/AnuragAmbuj/jvmtui
+Vcs-Browser: https://github.com/AnuragAmbuj/jvmtui
+Vcs-Git: https://github.com/AnuragAmbuj/jvmtui.git
+Rules-Requires-Root: no
+
+Package: jvm-tui
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: openjdk-21-jdk | openjdk-17-jdk | openjdk-11-jdk
+Description: Beautiful TUI for JVM monitoring
+ JVM-TUI brings powerful JVM monitoring to your terminal with a keyboard-driven
+ interface. Monitor heap usage, garbage collection, memory pools, and threads in
+ real-time - perfect for SSH sessions and production environments where GUI tools
+ aren't available.
+ .
+ Features:
+  - Auto-discovery of running JVMs
+  - Real-time heap usage, GC statistics, and memory pool metrics
+  - Keyboard-driven interface with Vim-style navigation
+  - No JVM agents required - uses standard JDK tools (jcmd, jstat, jps)
+  - SSH-friendly and lightweight
+ .
+ This package requires JDK 11+ with command-line tools (jcmd, jstat, jps)
+ to be installed on the system.

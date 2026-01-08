@@ -1,0 +1,65 @@
+name: jvmtui
+base: core22
+version: '0.1.0'
+summary: Command Line JVM monitoring for non-GUI environments
+description: |
+  jvmtui brings JVM monitoring to your terminal with a keyboard-driven 
+  interface. Monitor heap usage, garbage collection, memory pools, and threads in 
+  real-time - perfect for SSH sessions and production environments where GUI tools 
+  aren't available.
+  
+  Features:
+  - Auto-discovery of running JVMs
+  - Real-time heap usage, GC statistics, and memory pool metrics
+  - Keyboard-driven interface with Vim-style navigation
+  - No JVM agents required - uses standard JDK tools (jcmd, jstat, jps)
+  - SSH-friendly and lightweight
+  
+  Requirements:
+  - JDK 11+ with command-line tools installed on the system
+
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+  - build-on: armhf
+
+apps:
+  jvm-tui:
+    command: bin/jvm-tui
+    plugs:
+      - home
+      - system-observe
+      - process-control
+      - network
+      - network-bind
+
+parts:
+  jvm-tui:
+    plugin: rust
+    source: .
+    build-packages:
+      - pkg-config
+      - libssl-dev
+    stage-packages:
+      - libssl3
+    rust-channel: stable
+    rust-features: []
+    override-build: |
+      craftctl default
+      # Strip the binary for smaller size
+      strip $CRAFT_PART_INSTALL/bin/jvm-tui || true
+
+plugs:
+  home:
+    interface: home
+  system-observe:
+    interface: system-observe
+  process-control:
+    interface: process-control
+  network:
+    interface: network
+  network-bind:
+    interface: network-bind

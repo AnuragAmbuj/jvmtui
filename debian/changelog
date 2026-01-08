@@ -1,0 +1,10 @@
+jvm-tui (0.1.0-1) unstable; urgency=medium
+
+  * Initial release
+  * Complete Phase 1 MVP with real-time JVM monitoring
+  * Features: heap usage, GC statistics, memory pools, threads
+  * Auto-discovery of running JVMs
+  * Keyboard-driven TUI interface
+  * No JVM agents required
+
+ -- Anurag Ambuj <anuragambuj000@gmail.com>  Thu, 08 Jan 2026 23:25:00 +0530

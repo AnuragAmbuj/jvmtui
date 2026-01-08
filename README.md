@@ -1,6 +1,6 @@
 # JVM-TUI
 
-> A beautiful, lightweight terminal user interface for monitoring Java Virtual Machines - no agents required.
+> A lightweight terminal user interface for monitoring Java Virtual Machines - no agents required.
 
 [![CI](https://github.com/AnuragAmbuj/jvmtui/actions/workflows/ci.yml/badge.svg)](https://github.com/AnuragAmbuj/jvmtui/actions)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
@@ -14,7 +14,7 @@
 - **Keyboard-Driven** - Full Vim-style navigation (no mouse needed)
 - **No Agents Required** - Uses standard JDK tools (jcmd, jstat, jps)
 - **SSH-Friendly** - Works perfectly over remote connections
-- **Beautiful TUI** - Clean, responsive interface built with Ratatui
+- **TUI** - Responsive interface inside a terminal
 - **Lightweight** - Only 1.3MB binary with minimal resource usage
 
 ---
@@ -74,7 +74,6 @@ Detailed memory pool breakdown with visual gauges:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
----
 
 ## Quick Start
 
@@ -211,7 +210,7 @@ JVM-TUI uses **agentless monitoring** - it communicates with JVMs using standard
 2. **Connection**: Executes JDK commands (jcmd, jstat) to query JVM state
 3. **Parsing**: Parses command output into structured data
 4. **Collection**: Polls metrics at configurable intervals (default: 1s)
-5. **Display**: Renders live data in a beautiful terminal UI
+5. **Display**: Renders live data in a terminal UI
 
 **Benefits:**
 - No JVM agent installation required

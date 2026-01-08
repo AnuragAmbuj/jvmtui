@@ -1,0 +1,23 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export CARGO_HOME = $(CURDIR)/debian/cargo
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	# Cargo will handle dependency resolution
+
+override_dh_auto_build:
+	cargo build --release --locked
+
+override_dh_auto_test:
+	cargo test --release --locked
+
+override_dh_auto_install:
+	install -D -m 0755 target/release/jvm-tui debian/jvm-tui/usr/bin/jvm-tui
+
+override_dh_auto_clean:
+	cargo clean
+	rm -rf debian/cargo
