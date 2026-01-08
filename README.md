@@ -16,7 +16,14 @@
 - **No Agents Required** - Uses standard JDK tools (jcmd, jstat, jps)
 - **SSH-Friendly** - Works perfectly over remote connections
 - **Terminal-Adaptive** - Automatically adapts to your terminal's color scheme
-- **Lightweight** - Only 1.3MB binary with minimal resource usage
+- **Lightweight** - Pure Rust, ~3MB binary with minimal resource usage
+
+### Remote Monitoring (Phase 3 Complete)
+- **SSH+JDK** - Monitor remote JVMs over SSH (no agent needed!)
+- **Jolokia HTTP** - Connect to JVMs with Jolokia agent via HTTP/HTTPS
+- **Saved Connections** - Store favorite JVMs in config file
+- **Multiple Export Formats** - JSON, Prometheus, CSV with format selector
+- **Configuration System** - TOML-based config with auto-discovery
 
 ### Advanced Features (Phase 2 Complete)
 - **5 Comprehensive Views** - Overview, Memory, Threads, GC, Classes
@@ -85,6 +92,84 @@ Detailed memory pool breakdown with visual gauges:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+---
+
+## Remote Monitoring Options
+
+JVM-TUI supports **three connection types** for monitoring JVMs:
+
+### 1. Local JVMs (Auto-Discovery)
+Automatically discovers JVMs running on your local machine using `jcmd` and `jps`.
+
+**No configuration needed** - just run `jvm-tui` and select from discovered JVMs.
+
+### 2. SSH + JDK Tools (Agent-Free Remote)
+Monitor remote JVMs over SSH **without installing any agent**. Uses standard JDK tools (jcmd, jstat) remotely.
+
+**Configuration:**
+```toml
+[[connections]]
+type = "ssh-jdk"
+name = "Production Server"
+ssh_host = "prod.example.com"
+ssh_user = "appuser"
+ssh_key = "~/.ssh/id_rsa"
+pid = 12345
+```
+
+**Requirements:**
+- SSH access to remote server
+- JDK tools (jcmd, jstat) on remote server
+- JVM process ID
+
+**Advantages:**
+- ✅ No agent installation needed
+- ✅ Works with any JVM
+- ✅ Standard SSH (port 22)
+- ✅ Firewall-friendly
+
+### 3. Jolokia HTTP (Agent-Based Remote)
+Connect to remote JVMs via HTTP using the Jolokia agent.
+
+**Configuration:**
+```toml
+[[connections]]
+type = "jolokia"
+name = "API Server"
+url = "http://api.example.com:8080/jolokia"
+username = "admin"    # optional
+password = "secret"   # optional
+```
+
+**Setup on remote JVM:**
+```bash
+# Download Jolokia agent
+wget https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/1.7.1/jolokia-jvm-1.7.1-agent.jar
+
+# Start JVM with Jolokia
+java -javaagent:jolokia-jvm-1.7.1-agent.jar=port=8080 -jar your-app.jar
+```
+
+**Advantages:**
+- ✅ HTTP/HTTPS transport
+- ✅ Built-in authentication
+- ✅ Widely used in production
+
+### Connection Comparison
+
+| Feature | Local | SSH+JDK | Jolokia | Native JMX¹ |
+|---------|-------|---------|---------|-------------|
+| **Agent Required** | No | No | Yes | No |
+| **Network Protocol** | - | SSH | HTTP | RMI |
+| **JRE on Monitor Host** | No | No | No | **YES** |
+| **Pure Rust** | ✅ | ✅ | ✅ | ❌ |
+| **Firewall Friendly** | N/A | ✅ | ✅ | ❌ |
+| **Authentication** | - | SSH keys | HTTP Basic | JMX auth |
+| **Status** | ✅ Working | ✅ Working | ✅ Working | Not supported |
+
+¹ **Why no native JMX support?** Native JMX requires the Java runtime (RMI + Java serialization). The `jmx` Rust crate exists but uses JNI (Java Native Interface), requiring JRE installation on the monitoring machine. Our SSH+JDK connector provides the same functionality in pure Rust without requiring Java on your local machine.
+
+---
 
 ## Quick Start
 
@@ -112,6 +197,9 @@ cargo build --release
 # Auto-discover and select a JVM
 ./target/release/jvm-tui
 
+# Use a custom config file
+./target/release/jvm-tui --config /path/to/config.toml
+
 # Connect to a specific JVM by PID
 ./target/release/jvm-tui --pid 12345
 
@@ -121,6 +209,49 @@ cargo build --release
 # Show help
 ./target/release/jvm-tui --help
 ```
+
+### Configuration
+
+Create a `config.toml` file to save connections and preferences:
+
+```toml
+[preferences]
+default_interval = "1s"
+max_history_samples = 300
+export_directory = "~/jvm-exports"
+
+# Local JVM by PID
+[[connections]]
+type = "local"
+name = "IntelliJ IDEA"
+pid = 46168
+
+# Remote JVM via SSH (no agent needed!)
+[[connections]]
+type = "ssh-jdk"
+name = "Production API"
+ssh_host = "prod-api.example.com"
+ssh_user = "deploy"
+ssh_key = "~/.ssh/production"
+pid = 98765
+
+# Remote JVM via Jolokia HTTP
+[[connections]]
+type = "jolokia"
+name = "Staging Server"
+url = "https://staging.example.com:8778/jolokia"
+username = "monitor"
+password = "${JOLOKIA_PASS}"
+```
+
+**Config file locations** (checked in order):
+1. `--config <path>` CLI argument
+2. `$JVM_TUI_CONFIG` environment variable
+3. `./config.toml` (current directory)
+4. `~/.config/jvm-tui/config.toml` (XDG config)
+5. `~/.jvm-tui.toml` (home directory)
+
+See [`config.example.toml`](config.example.toml) for full documentation.
 
 ## Keyboard Controls
 
@@ -242,22 +373,58 @@ Download from [Adoptium](https://adoptium.net/) and add `bin` directory to PATH.
 - Total instances and bytes tracking
 - Color-coded memory usage warnings
 
+### Export Formats
+Press `e` to export data in multiple formats:
+
+- **JSON** - Full metrics snapshot with structured data
+- **Prometheus** - Time-series metrics in Prometheus text format
+  - Heap metrics: `jvm_memory_heap_used_bytes`, `jvm_memory_heap_max_bytes`
+  - GC metrics: `jvm_gc_collections_total{gc="young|old"}`
+  - Memory pools: `jvm_memory_pool_*_bytes{pool="..."}`
+  - Thread counts: `jvm_threads_total{state="..."}`
+- **CSV** - Tabular data with headers (`metric_name,value,unit,timestamp`)
+
+Exports are saved to the configured directory (default: `~/.local/share/jvm-tui/`).
+
 ## How It Works
 
-JVM-TUI uses **agentless monitoring** - it communicates with JVMs using standard JDK tools:
+JVM-TUI supports **three connection methods**, all without requiring custom agents:
 
+### Local Monitoring (JDK Tools)
 1. **Discovery**: Uses `jcmd -l` (or `jps -l` as fallback) to find running JVMs
-2. **Connection**: Executes JDK commands (jcmd, jstat) to query JVM state
+2. **Connection**: Executes JDK commands (jcmd, jstat) locally
 3. **Parsing**: Parses command output into structured data
 4. **Collection**: Polls metrics at configurable intervals (default: 1s)
 5. **Display**: Renders live data in a terminal UI
 
+### Remote Monitoring via SSH+JDK
+1. **SSH Connection**: Connects to remote server via SSH (key or password auth)
+2. **Remote Execution**: Runs `jcmd <pid>` and `jstat <pid>` on remote host
+3. **Local Parsing**: Parses output locally using the same parsers
+4. **Pure Rust**: No JRE required on the monitoring machine
+
+### Remote Monitoring via Jolokia
+1. **HTTP Request**: Sends JSON-RPC requests to Jolokia agent endpoint
+2. **MBean Access**: Reads JMX attributes via HTTP (Memory, GC, Threading, etc.)
+3. **Response Parsing**: Deserializes JSON responses
+4. **Optional Auth**: Supports HTTP Basic authentication
+
+**Architecture Decision: Why not native JMX?**
+
+Native JMX requires Java runtime (RMI protocol + Java serialization). While the [`jmx` crate](https://crates.io/crates/jmx) exists, it uses JNI (Java Native Interface) which:
+- Requires JRE installation on the monitoring machine
+- Adds JNI overhead and complexity
+- Is unmaintained (last update: 2020)
+
+Our SSH+JDK connector provides the same functionality in **pure Rust** without requiring Java locally.
+
 **Benefits:**
-- No JVM agent installation required
-- No JVM restarts needed
-- Works with any JVM process
-- Minimal performance impact
-- Safe for production use
+- ✅ No JVM agent installation (Local and SSH+JDK modes)
+- ✅ No JVM restarts needed
+- ✅ Works with any JVM process
+- ✅ Pure Rust - no JRE dependency
+- ✅ Minimal performance impact
+- ✅ Safe for production use
 
 ## Development
 
@@ -321,12 +488,20 @@ Contributions are welcome! This project is in active development.
 - Loading indicators and smooth scrolling
 - Terminal-adaptive color system
 
-**Phase 3 (Advanced Features)** 🚧 Planned
-- Jolokia connector for remote JVMs
-- SSH tunnel support
-- Configuration file persistence
-- JFR integration
-- Enhanced export formats
+**Phase 3 (Remote Monitoring & Configuration)** ✅ Complete
+- ✅ Configuration system (TOML-based, auto-discovery)
+- ✅ Saved connections with multiple connection types
+- ✅ Jolokia HTTP connector for remote JVMs
+- ✅ SSH+JDK connector for agent-free remote monitoring
+- ✅ Enhanced export formats (JSON, Prometheus, CSV)
+- ✅ Export format selector UI
+- ✅ Configurable export directory
+
+**Phase 4 (JFR Integration)** 📋 Planned
+- JFR recording management
+- Flight recording analysis
+- Event streaming
+- Custom JFR event configuration
 
 See [docs/14-implementation-phases.md](docs/14-implementation-phases.md) for detailed roadmap.
 
@@ -344,7 +519,10 @@ You may choose either license for your use.
 Built with:
 - [Ratatui](https://github.com/ratatui-org/ratatui) - Terminal UI framework
 - [Tokio](https://tokio.rs/) - Async runtime
+- [Reqwest](https://github.com/seanmonstar/reqwest) - HTTP client (Jolokia)
+- [async-ssh2-tokio](https://github.com/Miyoshi-Ryota/async-ssh2-tokio) - SSH client
 - [Clap](https://github.com/clap-rs/clap) - CLI parsing
+- [Serde](https://serde.rs/) - Serialization
 
 Inspired by [VisualVM](https://visualvm.github.io/) and modern CLI tools like [htop](https://htop.dev/).
 
