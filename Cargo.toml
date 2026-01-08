@@ -44,6 +44,9 @@ shellexpand = "3.1"
 # HTTP Client
 reqwest = { version = "0.12", features = ["json"] }
 
+# SSH Client
+async-ssh2-tokio = "0.8"
+
 [dev-dependencies]
 pretty_assertions = "1.4"
 tokio-test = "0.4"

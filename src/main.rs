@@ -11,6 +11,7 @@ use jvm_tui::{
         discovery::{discover_local_jvms, DiscoveredJvm},
         jdk_tools::connector::JdkToolsConnector,
         jolokia::connector::JolokiaConnector,
+        ssh_jdk::connector::SshJdkConnector,
     },
     metrics::{collector::MetricsCollector, store::MetricsStore},
     theme::Theme,
@@ -176,14 +177,18 @@ async fn main() -> Result<()> {
             jvm_info = connector.get_jvm_info().await?;
             Arc::new(RwLock::new(connector))
         }
-        SelectedConnection::SshJdk { .. } => {
-            terminal::restore_terminal(&mut terminal)?;
-            eprintln!("SSH+JDK connections are not yet implemented.");
-            eprintln!("This feature requires an SSH library which is coming soon.");
-            eprintln!("\nFor now, please use:");
-            eprintln!("  - Local JVMs (automatic discovery)");
-            eprintln!("  - Direct Jolokia HTTP connections");
-            return Ok(());
+        SelectedConnection::SshJdk {
+            host,
+            user,
+            port,
+            key,
+            password,
+            pid,
+        } => {
+            let mut connector = SshJdkConnector::new(host, port, user, key, password, pid);
+            connector.connect(pid).await?;
+            jvm_info = connector.get_jvm_info().await?;
+            Arc::new(RwLock::new(connector))
         }
     };
 
