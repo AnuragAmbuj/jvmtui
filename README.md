@@ -9,14 +9,24 @@
 
 ## Features
 
+### Core Capabilities
 - **Auto-Discovery** - Automatically finds all running JVMs on your system
 - **Real-Time Monitoring** - Live heap usage, GC statistics, and memory pool metrics
 - **Keyboard-Driven** - Full Vim-style navigation (no mouse needed)
 - **No Agents Required** - Uses standard JDK tools (jcmd, jstat, jps)
 - **SSH-Friendly** - Works perfectly over remote connections
 - **Terminal-Adaptive** - Automatically adapts to your terminal's color scheme
-- **TUI** - Responsive interface inside a terminal
 - **Lightweight** - Only 1.3MB binary with minimal resource usage
+
+### Advanced Features (Phase 2 Complete)
+- **5 Comprehensive Views** - Overview, Memory, Threads, GC, Classes
+- **Thread Search** - Find threads by name or ID with `/` command
+- **Class Histogram** - On-demand class memory analysis
+- **GC Triggers** - Manually trigger garbage collection with confirmation
+- **Export Capabilities** - Export thread dumps and metrics to files
+- **Error Recovery** - Automatic reconnection and graceful error handling
+- **Help System** - Built-in keybinding reference (press `?`)
+- **Smooth Scrolling** - Navigate large thread/class lists with j/k
 
 ---
 
@@ -212,19 +222,25 @@ Download from [Adoptium](https://adoptium.net/) and add `bin` directory to PATH.
 - Used/Max/Committed metrics
 
 ### Threads View
-- Thread count by state
-- Thread list (coming in Phase 2)
-- Stack traces (coming in Phase 2)
+- Thread count by state (Runnable, Blocked, Waiting, etc.)
+- Full thread list with scrolling (j/k navigation)
+- Thread search functionality (press `/`)
+- Stack trace display with depth info
+- Color-coded thread states
 
-### GC View *(Planned)*
-- GC event timeline
-- Pause time distribution
-- Throughput calculation
+### GC View
+- GC event timeline (Young GC and Full GC)
+- GC statistics with deltas
+- Average pause time calculations
+- Collection count tracking
+- Throughput metrics
 
-### Classes View *(Planned)*
-- Class histogram
-- Top memory consumers
-- Class loading statistics
+### Classes View
+- Class histogram on demand
+- Top 100 memory consumers
+- Scrollable class list (j/k navigation)
+- Total instances and bytes tracking
+- Color-coded memory usage warnings
 
 ## How It Works
 
@@ -284,17 +300,33 @@ cargo check
 
 Contributions are welcome! This project is in active development.
 
-**Phase 1 (MVP)** Complete
-- JVM discovery and connection
-- Real-time metrics collection
-- Overview and Memory views
-- Basic TUI scaffold
+### Development Status
 
-**Phase 2** (Planned)
-- Enhanced GC view with timeline
+**Phase 1 (MVP)** ✅ Complete
+- JVM discovery and connection
+- Real-time metrics collection  
+- Overview and Memory views
+- Basic TUI scaffold with tab navigation
+- Async metrics polling with configurable intervals
+
+**Phase 2 (Full Monitoring)** ✅ Complete
+- Enhanced GC view with timeline and statistics
 - Full thread dumps with stack traces
-- Class histogram view
-- Trigger GC action
+- Thread search functionality (press `/`)
+- Class histogram view with scrolling
+- Trigger GC action with confirmation
+- Help overlay with keybinding reference
+- Error handling and recovery
+- Export features (thread dumps, metrics to JSON)
+- Loading indicators and smooth scrolling
+- Terminal-adaptive color system
+
+**Phase 3 (Advanced Features)** 🚧 Planned
+- Jolokia connector for remote JVMs
+- SSH tunnel support
+- Configuration file persistence
+- JFR integration
+- Enhanced export formats
 
 See [docs/14-implementation-phases.md](docs/14-implementation-phases.md) for detailed roadmap.
 
