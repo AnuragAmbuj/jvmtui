@@ -66,11 +66,53 @@ impl Tab {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExportFormat {
+    Json,
+    Prometheus,
+    Csv,
+}
+
+impl ExportFormat {
+    pub fn next(self) -> Self {
+        match self {
+            ExportFormat::Json => ExportFormat::Prometheus,
+            ExportFormat::Prometheus => ExportFormat::Csv,
+            ExportFormat::Csv => ExportFormat::Json,
+        }
+    }
+
+    pub fn previous(self) -> Self {
+        match self {
+            ExportFormat::Json => ExportFormat::Csv,
+            ExportFormat::Prometheus => ExportFormat::Json,
+            ExportFormat::Csv => ExportFormat::Prometheus,
+        }
+    }
+
+    pub fn extension(&self) -> &str {
+        match self {
+            ExportFormat::Json => "json",
+            ExportFormat::Prometheus => "prom",
+            ExportFormat::Csv => "csv",
+        }
+    }
+
+    pub fn display_name(&self) -> &str {
+        match self {
+            ExportFormat::Json => "JSON",
+            ExportFormat::Prometheus => "Prometheus",
+            ExportFormat::Csv => "CSV",
+        }
+    }
+}
+
 pub enum AppMode {
     Normal,
     Help,
     ConfirmGc,
     ConfirmExport,
+    SelectExportFormat,
     Error(String),
     Loading(String),
     ExportSuccess(String),
@@ -88,6 +130,7 @@ pub struct App {
     pub search_results: Vec<usize>,
     pub search_index: usize,
     pub theme: Theme,
+    pub selected_export_format: ExportFormat,
 }
 
 impl App {
@@ -103,6 +146,7 @@ impl App {
             search_results: Vec::new(),
             search_index: 0,
             theme: Theme,
+            selected_export_format: ExportFormat::Json,
         }
     }
 
@@ -142,12 +186,24 @@ impl App {
         self.mode = AppMode::ConfirmGc;
     }
 
+    pub fn show_export_format_selector(&mut self) {
+        self.mode = AppMode::SelectExportFormat;
+    }
+
     pub fn show_export_confirmation(&mut self) {
         self.mode = AppMode::ConfirmExport;
     }
 
     pub fn cancel_confirmation(&mut self) {
         self.mode = AppMode::Normal;
+    }
+
+    pub fn next_export_format(&mut self) {
+        self.selected_export_format = self.selected_export_format.next();
+    }
+
+    pub fn previous_export_format(&mut self) {
+        self.selected_export_format = self.selected_export_format.previous();
     }
 
     pub fn show_export_success(&mut self, path: String) {

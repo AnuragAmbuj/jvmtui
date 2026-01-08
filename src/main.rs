@@ -2,7 +2,7 @@ use clap::Parser;
 use color_eyre::Result;
 use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyModifiers};
 use jvm_tui::{
-    app::{App, AppMode, Tab},
+    app::{App, AppMode, ExportFormat, Tab},
     cli::Cli,
     config::{Config, ConnectionProfile},
     export,
@@ -215,6 +215,21 @@ async fn main() -> Result<()> {
                         }
                         _ => {}
                     },
+                    AppMode::SelectExportFormat => match key.code {
+                        KeyCode::Char('j') | KeyCode::Down => {
+                            app.next_export_format();
+                        }
+                        KeyCode::Char('k') | KeyCode::Up => {
+                            app.previous_export_format();
+                        }
+                        KeyCode::Enter => {
+                            app.show_export_confirmation();
+                        }
+                        KeyCode::Esc | KeyCode::Char('q') => {
+                            app.cancel_confirmation();
+                        }
+                        _ => {}
+                    },
                     AppMode::ConfirmExport => match key.code {
                         KeyCode::Char('y') | KeyCode::Char('Y') => {
                             app.show_loading("Exporting data...".to_string());
@@ -225,7 +240,17 @@ async fn main() -> Result<()> {
                                     &store_read.thread_snapshot,
                                     export_dir,
                                 ),
-                                _ => export::export_metrics_json(&store_read, export_dir),
+                                _ => match app.selected_export_format {
+                                    ExportFormat::Json => {
+                                        export::export_metrics_json(&store_read, export_dir)
+                                    }
+                                    ExportFormat::Prometheus => {
+                                        export::export_metrics_prometheus(&store_read, export_dir)
+                                    }
+                                    ExportFormat::Csv => {
+                                        export::export_metrics_csv(&store_read, export_dir)
+                                    }
+                                },
                             };
 
                             match result {
@@ -276,7 +301,11 @@ async fn main() -> Result<()> {
                             app.show_gc_confirmation();
                         }
                         (KeyCode::Char('e'), _) => {
-                            app.show_export_confirmation();
+                            if app.current_tab == Tab::Threads {
+                                app.show_export_confirmation();
+                            } else {
+                                app.show_export_format_selector();
+                            }
                         }
                         (KeyCode::Char('/'), _) => {
                             if app.current_tab == Tab::Threads {

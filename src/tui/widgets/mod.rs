@@ -1,5 +1,6 @@
 pub mod confirmation_dialog;
 pub mod error_screen;
+pub mod format_selector_dialog;
 pub mod help_footer;
 pub mod help_overlay;
 pub mod loading_screen;

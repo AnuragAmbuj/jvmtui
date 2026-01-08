@@ -5,7 +5,8 @@ use crate::tui::views::{
     threads::ThreadsView,
 };
 use crate::tui::widgets::{
-    confirmation_dialog::ConfirmationDialog, error_screen::ErrorScreen, help_overlay::HelpOverlay,
+    confirmation_dialog::ConfirmationDialog, error_screen::ErrorScreen,
+    format_selector_dialog::FormatSelectorDialog, help_overlay::HelpOverlay,
     loading_screen::LoadingScreen, search_bar::SearchBar,
 };
 use ratatui::{
@@ -46,10 +47,21 @@ impl MonitoringScreen {
                     &app.theme,
                 );
             }
+            AppMode::SelectExportFormat => {
+                FormatSelectorDialog::render(
+                    frame,
+                    frame.area(),
+                    app.selected_export_format,
+                    &app.theme,
+                );
+            }
             AppMode::ConfirmExport => {
                 let message = match app.current_tab {
                     Tab::Threads => "Export thread dump to file?",
-                    _ => "Export current metrics to JSON file?",
+                    _ => &format!(
+                        "Export current metrics to {} file?",
+                        app.selected_export_format.display_name()
+                    ),
                 };
                 ConfirmationDialog::render(frame, frame.area(), "Export Data", message, &app.theme);
             }
