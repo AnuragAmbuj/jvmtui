@@ -29,6 +29,14 @@ enum SelectedConnection {
         username: Option<String>,
         password: Option<String>,
     },
+    SshJdk {
+        host: String,
+        user: String,
+        port: u16,
+        key: Option<String>,
+        password: Option<String>,
+        pid: u32,
+    },
 }
 
 #[tokio::main]
@@ -106,13 +114,31 @@ async fn main() -> Result<()> {
                                         password: password.clone(),
                                     };
                                 }
+                                ConnectionProfile::SshJdk {
+                                    ssh_host,
+                                    ssh_user,
+                                    ssh_port,
+                                    ssh_key,
+                                    ssh_password,
+                                    pid,
+                                    ..
+                                } => {
+                                    break SelectedConnection::SshJdk {
+                                        host: ssh_host.clone(),
+                                        user: ssh_user.clone(),
+                                        port: *ssh_port,
+                                        key: ssh_key.clone(),
+                                        password: ssh_password.clone(),
+                                        pid: *pid,
+                                    };
+                                }
                                 ConnectionProfile::SshJolokia { .. } => {
-                                    // SSH tunneling coming in Phase 3.4
                                     terminal::restore_terminal(&mut terminal)?;
-                                    println!(
-                                        "SSH tunnel connections will be available in Phase 3.4"
-                                    );
-                                    println!("For now, please use direct Jolokia connections or local JVMs.");
+                                    println!("SSH+Jolokia tunnel connections coming soon");
+                                    println!("For now, use:");
+                                    println!("  - Direct Jolokia HTTP");
+                                    println!("  - SSH+JDK (jcmd/jstat over SSH)");
+                                    println!("  - Local JVMs");
                                     return Ok(());
                                 }
                             }
@@ -149,6 +175,15 @@ async fn main() -> Result<()> {
             connector.connect(0).await?;
             jvm_info = connector.get_jvm_info().await?;
             Arc::new(RwLock::new(connector))
+        }
+        SelectedConnection::SshJdk { .. } => {
+            terminal::restore_terminal(&mut terminal)?;
+            eprintln!("SSH+JDK connections are not yet implemented.");
+            eprintln!("This feature requires an SSH library which is coming soon.");
+            eprintln!("\nFor now, please use:");
+            eprintln!("  - Local JVMs (automatic discovery)");
+            eprintln!("  - Direct Jolokia HTTP connections");
+            return Ok(());
         }
     };
 

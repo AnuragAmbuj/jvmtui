@@ -42,6 +42,24 @@ url = "http://prod-api.example.com:8778/jolokia"
 # username = "admin"
 # password = "secret"
 
+# Example: Remote JVM via SSH + JDK Tools (jcmd/jstat over SSH)
+# This works with ANY JVM that has JDK tools, no agent required!
+[[connections]]
+name = "Remote Server (SSH + jcmd)"
+type = "ssh-jdk"
+ssh_host = "remote.example.com"
+ssh_user = "appuser"
+ssh_port = 22
+# SSH authentication method (choose one):
+# Option 1: SSH key file (recommended)
+ssh_key = "~/.ssh/id_rsa"
+# Option 2: SSH password (not recommended for production)
+# ssh_password = "secret"
+# Option 3: Use SSH agent (default if neither key nor password specified)
+
+# PID of the JVM process on the remote server
+pid = 12345
+
 # Example: Remote JVM via SSH Tunnel + Jolokia
 [[connections]]
 name = "Staging Server (via SSH)"
@@ -49,13 +67,7 @@ type = "ssh-jolokia"
 ssh_host = "staging.example.com"
 ssh_user = "deploy"
 ssh_port = 22
-# SSH authentication method (choose one):
-# Option 1: SSH key file
 ssh_key = "~/.ssh/id_rsa"
-# Option 2: SSH password (not recommended for production)
-# ssh_password = "secret"
-# Option 3: Use SSH agent (default if neither key nor password specified)
-
 # Jolokia port on the remote server
 jolokia_port = 8778
 # Optional: Local port for tunnel (auto-assigned if omitted)

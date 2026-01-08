@@ -44,6 +44,19 @@ pub enum ConnectionProfile {
         #[serde(skip_serializing_if = "Option::is_none")]
         password: Option<String>,
     },
+    #[serde(rename = "ssh-jdk")]
+    SshJdk {
+        name: String,
+        ssh_host: String,
+        ssh_user: String,
+        #[serde(default = "default_ssh_port")]
+        ssh_port: u16,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ssh_key: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ssh_password: Option<String>,
+        pid: u32,
+    },
     #[serde(rename = "ssh-jolokia")]
     SshJolokia {
         name: String,
@@ -172,10 +185,14 @@ impl Config {
         }
 
         for connection in &mut self.connections {
-            if let ConnectionProfile::SshJolokia { ssh_key, .. } = connection {
-                if let Some(ref mut key_path) = ssh_key {
-                    *key_path = shellexpand::tilde(key_path).to_string();
+            match connection {
+                ConnectionProfile::SshJdk { ssh_key, .. }
+                | ConnectionProfile::SshJolokia { ssh_key, .. } => {
+                    if let Some(ref mut key_path) = ssh_key {
+                        *key_path = shellexpand::tilde(key_path).to_string();
+                    }
                 }
+                _ => {}
             }
         }
     }
@@ -199,6 +216,20 @@ impl Config {
                     if !url.starts_with("http://") && !url.starts_with("https://") {
                         return Err(AppError::ConfigLoad(format!(
                             "Connection '{}': Jolokia URL must start with http:// or https://",
+                            idx
+                        )));
+                    }
+                }
+                ConnectionProfile::SshJdk { ssh_host, pid, .. } => {
+                    if ssh_host.is_empty() {
+                        return Err(AppError::ConfigLoad(format!(
+                            "Connection '{}': ssh_host cannot be empty",
+                            idx
+                        )));
+                    }
+                    if *pid == 0 {
+                        return Err(AppError::ConfigLoad(format!(
+                            "Connection '{}': pid must be greater than 0",
                             idx
                         )));
                     }
@@ -232,6 +263,7 @@ impl Config {
         self.connections.iter().find(|c| match c {
             ConnectionProfile::Local { name: n, .. } => n == name,
             ConnectionProfile::Jolokia { name: n, .. } => n == name,
+            ConnectionProfile::SshJdk { name: n, .. } => n == name,
             ConnectionProfile::SshJolokia { name: n, .. } => n == name,
         })
     }
@@ -242,6 +274,7 @@ impl ConnectionProfile {
         match self {
             ConnectionProfile::Local { name, .. } => name,
             ConnectionProfile::Jolokia { name, .. } => name,
+            ConnectionProfile::SshJdk { name, .. } => name,
             ConnectionProfile::SshJolokia { name, .. } => name,
         }
     }
@@ -250,6 +283,7 @@ impl ConnectionProfile {
         match self {
             ConnectionProfile::Local { .. } => "Local",
             ConnectionProfile::Jolokia { .. } => "Jolokia (HTTP)",
+            ConnectionProfile::SshJdk { .. } => "SSH + JDK Tools",
             ConnectionProfile::SshJolokia { .. } => "SSH + Jolokia",
         }
     }
