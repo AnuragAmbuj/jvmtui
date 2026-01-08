@@ -6,7 +6,7 @@ use crate::tui::views::{
 };
 use crate::tui::widgets::{
     confirmation_dialog::ConfirmationDialog, error_screen::ErrorScreen, help_overlay::HelpOverlay,
-    loading_screen::LoadingScreen,
+    loading_screen::LoadingScreen, search_bar::SearchBar,
 };
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -65,6 +65,15 @@ impl MonitoringScreen {
             }
             AppMode::Loading(message) => {
                 LoadingScreen::render(frame, frame.area(), message);
+            }
+            AppMode::Search => {
+                SearchBar::render(
+                    frame,
+                    frame.area(),
+                    &app.search_query,
+                    app.search_results.len(),
+                    app.search_index,
+                );
             }
             AppMode::Normal => {}
         }

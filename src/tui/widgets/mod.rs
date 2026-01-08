@@ -4,6 +4,7 @@ pub mod help_footer;
 pub mod help_overlay;
 pub mod loading_screen;
 pub mod memory_gauge;
+pub mod search_bar;
 pub mod sparkline_panel;
 pub mod stat_card;
 pub mod thread_table;

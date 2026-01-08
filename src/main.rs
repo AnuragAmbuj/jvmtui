@@ -12,6 +12,7 @@ use jvm_tui::{
     metrics::{collector::MetricsCollector, store::MetricsStore},
     tui::screens::{jvm_picker::JvmPickerScreen, monitoring::MonitoringScreen},
     tui::terminal,
+    tui::views::threads::ThreadsView,
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -122,6 +123,46 @@ async fn main() -> Result<()> {
                         _ => {}
                     },
                     AppMode::Loading(_) => {}
+                    AppMode::Search => match key.code {
+                        KeyCode::Esc => {
+                            app.cancel_search();
+                        }
+                        KeyCode::Enter => {
+                            if !app.search_results.is_empty() {
+                                app.mode = AppMode::Normal;
+                            }
+                        }
+                        KeyCode::Char('n') if key.modifiers.is_empty() => {
+                            app.next_search_result();
+                        }
+                        KeyCode::Char('N') | KeyCode::Char('n')
+                            if key.modifiers.contains(KeyModifiers::SHIFT) =>
+                        {
+                            app.prev_search_result();
+                        }
+                        KeyCode::Backspace => {
+                            app.pop_search_char();
+                            if app.current_tab == Tab::Threads {
+                                let store_read = store.read().await;
+                                let results =
+                                    ThreadsView::search_threads(&store_read, &app.search_query);
+                                app.update_search_results(results);
+                            }
+                        }
+                        KeyCode::Char(c) => {
+                            app.push_search_char(c);
+                            if app.current_tab == Tab::Threads {
+                                let store_read = store.read().await;
+                                let results =
+                                    ThreadsView::search_threads(&store_read, &app.search_query);
+                                if !results.is_empty() {
+                                    app.scroll_offset = results[0];
+                                }
+                                app.update_search_results(results);
+                            }
+                        }
+                        _ => {}
+                    },
                     AppMode::ConfirmGc => match key.code {
                         KeyCode::Char('y') | KeyCode::Char('Y') => {
                             let conn = connector_arc.read().await;
@@ -193,6 +234,11 @@ async fn main() -> Result<()> {
                         }
                         (KeyCode::Char('e'), _) => {
                             app.show_export_confirmation();
+                        }
+                        (KeyCode::Char('/'), _) => {
+                            if app.current_tab == Tab::Threads {
+                                app.start_search();
+                            }
                         }
                         (KeyCode::Char('r'), _) => {
                             let mut store_mut = store.write().await;

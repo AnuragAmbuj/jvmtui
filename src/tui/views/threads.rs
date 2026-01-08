@@ -24,6 +24,28 @@ impl ThreadsView {
         Self::render_thread_list(frame, chunks[1], store, scroll);
     }
 
+    pub fn search_threads(store: &MetricsStore, query: &str) -> Vec<usize> {
+        if query.is_empty() {
+            return Vec::new();
+        }
+
+        let query_lower = query.to_lowercase();
+        store
+            .thread_snapshot
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, thread)| {
+                if thread.name.to_lowercase().contains(&query_lower)
+                    || thread.id.to_string().contains(query)
+                {
+                    Some(idx)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
     fn render_summary_section(frame: &mut Frame, area: Rect, store: &MetricsStore) {
         let threads = &store.thread_snapshot;
 

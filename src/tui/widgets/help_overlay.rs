@@ -32,7 +32,7 @@ impl HelpOverlay {
                 Constraint::Length(3),
                 Constraint::Length(8),
                 Constraint::Length(6),
-                Constraint::Length(6),
+                Constraint::Length(9),
                 Constraint::Min(0),
             ])
             .split(inner_area);
@@ -76,6 +76,9 @@ impl HelpOverlay {
                 ("j / ↓", "Scroll down (Threads/Classes views)"),
                 ("k / ↑", "Scroll up (Threads/Classes views)"),
                 ("/", "Search threads (Threads view)"),
+                ("n", "Next search result (during search)"),
+                ("N", "Previous search result (during search)"),
+                ("Esc", "Cancel search (during search)"),
             ],
         );
 

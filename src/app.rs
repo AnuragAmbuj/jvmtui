@@ -73,6 +73,7 @@ pub enum AppMode {
     Error(String),
     Loading(String),
     ExportSuccess(String),
+    Search,
 }
 
 pub struct App {
@@ -82,6 +83,9 @@ pub struct App {
     pub metrics_store: Arc<RwLock<MetricsStore>>,
     pub mode: AppMode,
     pub scroll_offset: usize,
+    pub search_query: String,
+    pub search_results: Vec<usize>,
+    pub search_index: usize,
 }
 
 impl App {
@@ -93,6 +97,9 @@ impl App {
             metrics_store,
             mode: AppMode::Normal,
             scroll_offset: 0,
+            search_query: String::new(),
+            search_results: Vec::new(),
+            search_index: 0,
         }
     }
 
@@ -173,6 +180,55 @@ impl App {
     pub fn clear_loading(&mut self) {
         if matches!(self.mode, AppMode::Loading(_)) {
             self.mode = AppMode::Normal;
+        }
+    }
+
+    pub fn start_search(&mut self) {
+        self.mode = AppMode::Search;
+        self.search_query.clear();
+        self.search_results.clear();
+        self.search_index = 0;
+    }
+
+    pub fn cancel_search(&mut self) {
+        self.mode = AppMode::Normal;
+        self.search_query.clear();
+        self.search_results.clear();
+        self.search_index = 0;
+    }
+
+    pub fn push_search_char(&mut self, c: char) {
+        self.search_query.push(c);
+    }
+
+    pub fn pop_search_char(&mut self) {
+        self.search_query.pop();
+    }
+
+    pub fn update_search_results(&mut self, results: Vec<usize>) {
+        self.search_results = results;
+        self.search_index = 0;
+    }
+
+    pub fn next_search_result(&mut self) {
+        if !self.search_results.is_empty() {
+            self.search_index = (self.search_index + 1) % self.search_results.len();
+            if let Some(&result_offset) = self.search_results.get(self.search_index) {
+                self.scroll_offset = result_offset;
+            }
+        }
+    }
+
+    pub fn prev_search_result(&mut self) {
+        if !self.search_results.is_empty() {
+            self.search_index = if self.search_index == 0 {
+                self.search_results.len() - 1
+            } else {
+                self.search_index - 1
+            };
+            if let Some(&result_offset) = self.search_results.get(self.search_index) {
+                self.scroll_offset = result_offset;
+            }
         }
     }
 }
